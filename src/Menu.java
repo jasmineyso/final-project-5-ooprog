@@ -2,6 +2,15 @@ package src;
 import java.util.Scanner;
 
 public class Menu {
+
+    Scanner sc;
+    LogIn login;
+
+
+    public Menu(Scanner sc) {
+        this.sc = sc;
+        this.login = new LogIn(sc);
+    }
     
     public void Menus() {
         System.out.println("Welcome to the ___ Airline!");
@@ -17,7 +26,7 @@ public class Menu {
 
         switch (userChoice) {
             case "1" -> {
-                LogIn login = new LogIn();
+                login.userType();
             }
             case "2" -> {
                 SignUp signup = new SignUp();
