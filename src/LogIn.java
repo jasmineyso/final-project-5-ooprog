@@ -21,7 +21,7 @@ public class LogIn {
         switch (userChoice) {
             case "1" -> loginAdmin();
             case "2" ->loginRegularUser();
-            default -> System.out.println("Invalid choice. Please try again.");
+            default -> System.out.println(ErrorMessages.switcherror.INVALID_CHOICE);
         }
     }
 

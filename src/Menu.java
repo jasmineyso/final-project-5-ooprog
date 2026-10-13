@@ -5,11 +5,12 @@ public class Menu {
 
     Scanner sc;
     LogIn login;
-
+    SignUp signup;
 
     public Menu(Scanner sc) {
         this.sc = sc;
         this.login = new LogIn(sc);
+        this.signup = new SignUp(sc);
     }
     
     public void Menus() {
@@ -29,7 +30,7 @@ public class Menu {
                 login.userType();
             }
             case "2" -> {
-                SignUp signup = new SignUp();
+                signup.signUp();
             }
             case "3" -> {
                 // Add logic to view available flights
@@ -38,7 +39,7 @@ public class Menu {
                 System.out.println("Thank you for using the ___ Airline. Goodbye!");
                 System.exit(0);
             }
-            default -> System.out.println("Invalid choice. Please try again.");
+            default -> System.out.println(ErrorMessages.switcherror.INVALID_CHOICE);
         }
         sc.close();
     }
