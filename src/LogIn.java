@@ -26,21 +26,12 @@ public class LogIn {
     }
 
     public void loginRegularUser() {
-        System.out.print("Enter your username: ");
-        String username = sc.nextLine();
-        System.out.print("Enter your password: ");
-        String password = sc.nextLine();
-
         // Add your login logic here
+        // Use the USER_ACCOUNTS list to validate the username and password
     }
 
     public void loginAdmin() {
-        System.out.println("==== ADMIN LOGIN ====");
-        System.out.print("Enter your admin username: ");
-        String adminUsername = sc.nextLine();
-        System.out.print("Enter your admin password: ");
-        String adminPassword = sc.nextLine();
-
         // Add your admin login logic here
+        // Use the USER_ACCOUNTS list to validate the username and password
     }
 }
