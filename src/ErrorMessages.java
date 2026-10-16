@@ -9,6 +9,10 @@ public class ErrorMessages {
         public static final String LOAD_FAILED = "Saved accounts could not be loaded: ";
     }
 
+    public static class LogInErrors {
+        public static final String INVALID_CREDENTIALS = "Invalid username or password. Please try again.";
+    }
+
     public static class SignUpErrors {
         public static final String INVALID_USERNAME = "Username cannot be blank. Please try again.";
         public static final String INVALID_PASSWORD = "Password cannot be blank. Please try again.";
