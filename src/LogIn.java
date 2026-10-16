@@ -1,4 +1,5 @@
 package src;
+import java.io.IOException;
 import java.util.Scanner;
 
 public class LogIn {
@@ -14,7 +15,6 @@ public class LogIn {
         System.out.println("1. Admin");
         System.out.println("2. Regular User");
 
-        Scanner sc = new Scanner(System.in);
         System.out.print("Enter your choice: ");
         String userChoice = sc.nextLine();
 
@@ -26,8 +26,24 @@ public class LogIn {
     }
 
     public void loginRegularUser() {
-        // Add your login logic here
-        // Use the USER_ACCOUNTS list to validate the username and password
+        System.out.println("=== Regular User Login ===");
+        System.out.print("Enter Username: ");
+        String username = sc.nextLine().trim();
+        System.out.print("Enter Password: ");
+        String password = sc.nextLine();
+
+        try {
+            AccountStorage accountStorage = new AccountStorage();
+            for (RegularUser user : accountStorage.loadUsers()) {
+                if (user.getUsername().equals(username) && user.checkPassword(password)) {
+                    System.out.println("Login successful! Welcome, " + user.getUsername() + "!");
+                    return;
+                }
+            }
+            System.out.println(ErrorMessages.LogInErrors.INVALID_CREDENTIALS);
+        } catch (IOException e) {
+            System.out.println(ErrorMessages.AccountErrors.LOAD_FAILED + e.getMessage());
+        }
     }
 
     public void loginAdmin() {

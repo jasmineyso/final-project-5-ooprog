@@ -13,7 +13,7 @@ public class AccountStorage {
     private final Path filePath;
 
     public AccountStorage() {
-        this(Path.of("files", "USER_ACCOUNTS.TXT"));
+        this(Path.of("src", "files", "USER_ACCOUNTS.txt"));
     }
 
     public AccountStorage(Path filePath) {

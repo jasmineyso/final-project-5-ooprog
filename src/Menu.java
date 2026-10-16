@@ -23,6 +23,10 @@ public class Menu {
     }
     
     public void Menus() {
+        boolean exit = false;
+
+        while (!exit) {
+
         System.out.println("Welcome to the ___ Airline!");
         System.out.println("1. Log in");
         System.out.println("2. Sign up");
@@ -32,28 +36,29 @@ public class Menu {
         System.out.print("Enter your choice: ");
         String userChoice = sc.nextLine();
 
-        switch (userChoice) {
-            case "1" -> {
-                login.userType();
-            }
-            case "2" -> {
-                RegularUser user = signup.signUp();
-                try {
-                    accountStorage.saveUser(user);
-                    users.add(user);
-                    System.out.println("Account created and saved successfully!");
-                } catch (IOException e) {
-                    System.out.println(ErrorMessages.AccountErrors.SAVE_FAILED + e.getMessage());
+            switch (userChoice) {
+                case "1" -> {
+                    login.userType();
                 }
+                case "2" -> {
+                    RegularUser user = signup.signUp();
+                    try {
+                        accountStorage.saveUser(user);
+                        users.add(user);
+                        System.out.println("Account created and saved successfully!");
+                    } catch (IOException e) {
+                        System.out.println(ErrorMessages.AccountErrors.SAVE_FAILED + e.getMessage());
+                    }
+                }
+                case "3" -> {
+                    // Add logic to view available flights
+                }
+                case "4" -> {
+                    System.out.println("Thank you for using the ___ Airline. Goodbye!");
+                    exit = true;
+                }
+                default -> System.out.println(ErrorMessages.switcherror.INVALID_CHOICE);
             }
-            case "3" -> {
-                // Add logic to view available flights
-            }
-            case "4" -> {
-                System.out.println("Thank you for using the ___ Airline. Goodbye!");
-                System.exit(0);
-            }
-            default -> System.out.println(ErrorMessages.switcherror.INVALID_CHOICE);
         }
         sc.close();
     }
