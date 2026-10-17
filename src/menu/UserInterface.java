@@ -1,9 +1,10 @@
 package src.menu;
 
-import src.core.ErrorMessages;
-import src.util.Input;
-
 import java.util.Scanner;
+
+import src.core.ErrorMessages;
+import src.core.ErrorMessages.SwitchError;
+import src.util.Input;
 
 public class UserInterface {
     // Add your user interface logic here
@@ -58,7 +59,6 @@ public class UserInterface {
     }
 
     public void userUI() {
-        System.out.println("=== User Menu ===");
-        System.out.println("Logging out...");
+        // Add your regular user interface logic here
     }
 }

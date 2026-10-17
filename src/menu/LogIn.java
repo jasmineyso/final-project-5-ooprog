@@ -1,71 +1,40 @@
 package src.menu;
 
-import src.account.AccountStorage;
-import src.account.Admin;
-import src.account.RegularUser;
-import src.core.ErrorMessages;
-import src.util.Input;
-import java.io.IOException;
 import java.util.Scanner;
+
+import src.util.Display;
 
 public class LogIn {
 
-    private final Scanner sc = Input.getScanner();
+    private final Scanner sc;
 
-    public void userType() {
-        System.out.println("What type of user are you?:");
-        System.out.println("1. Admin");
-        System.out.println("2. Regular User");
-
-        System.out.print("Enter your choice: ");
-        String userChoice = sc.nextLine();
-
-        switch (userChoice) {
-            case "1" -> loginAdmin();
-            case "2" -> loginRegularUser();
-            default -> System.out.println(ErrorMessages.SwitchError.INVALID_CHOICE);
-        }
-    }
-
-    public void loginRegularUser() {
-        System.out.println("=== Regular User Login ===");
-        System.out.print("Enter Username: ");
-        String username = sc.nextLine().trim();
-        System.out.print("Enter Password: ");
-        String password = sc.nextLine();
-
-        try {
-            for (RegularUser user : AccountStorage.getInstance().loadUsers()) {
-                if (user.getUsername().equals(username) && user.checkPassword(password)) {
-                    System.out.println("Login successful! Welcome, " + user.getUsername() + "!");
-                    UserInterface.getInstance().userUI();
-                    return;
-                }
-            }
-            System.out.println(ErrorMessages.LogInErrors.INVALID_CREDENTIALS);
-        } catch (IOException e) {
-            System.out.println(ErrorMessages.AccountErrors.LOAD_FAILED + e.getMessage());
-        }
+    public LogIn(Scanner sc) {
+        this.sc = sc;
     }
 
     public void loginAdmin() {
-        System.out.println("=== Admin Login ===");
-        System.out.print("Enter Username: ");
-        String username = sc.nextLine().trim();
-        System.out.print("Enter Password: ");
+        Display.title("Admin Log In");
+        Display.prompt("Enter admin username");
+        String username = sc.nextLine();
+        Display.prompt("Enter admin password");
         String password = sc.nextLine();
 
-        try {
-            for (Admin user : AccountStorage.getInstance().loadAdmins()) {
-                if (user.getUsername().equals(username) && user.checkPassword(password)) {
-                    System.out.println("Login successful! Welcome, " + user.getUsername() + "!");
-                    UserInterface.getInstance().adminUI();
-                    return;
-                }
-            }
-            System.out.println(ErrorMessages.LogInErrors.INVALID_CREDENTIALS);
-        } catch (IOException e) {
-            System.out.println(ErrorMessages.AccountErrors.LOAD_FAILED + e.getMessage());
-        }
+        // TODO: check the username and password against ADMIN_ACCOUNTS.
+        // If correct:  new AdminMenu(admin).start();
+        // If wrong:    Display.error(ErrorMessages.LogInErrors.INVALID_CREDENTIALS);
+        // Either way, the program returns to the "What type of user are you?" screen afterwards.
+    }
+
+    public void loginRegularUser() {
+        Display.title("Log In");
+        Display.prompt("Enter username");
+        String username = sc.nextLine();
+        Display.prompt("Enter password");
+        String password = sc.nextLine();
+
+        // TODO: check the username and password against USER_ACCOUNTS.
+        // If correct:  open the passenger menu.
+        // If wrong:    Display.error(ErrorMessages.LogInErrors.INVALID_CREDENTIALS);
+        // Either way, the program returns to the Sign Up / Log In screen afterwards.
     }
 }
