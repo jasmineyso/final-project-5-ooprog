@@ -1,4 +1,8 @@
-package src;
+package src.menu;
+
+import src.account.RegularUser;
+import src.core.ErrorMessages;
+import src.util.Input;
 
 import java.util.Scanner;
 

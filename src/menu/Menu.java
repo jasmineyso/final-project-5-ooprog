@@ -1,4 +1,9 @@
-package src;
+package src.menu;
+
+import src.account.AccountStorage;
+import src.account.RegularUser;
+import src.core.ErrorMessages;
+import src.util.Input;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Scanner;
@@ -55,7 +60,7 @@ public class Menu {
                     System.out.println("Thank you for using the ___ Airline. Goodbye!");
                     exit = true;
                 }
-                default -> System.out.println(ErrorMessages.switcherror.INVALID_CHOICE);
+                default -> System.out.println(ErrorMessages.SwitchError.INVALID_CHOICE);
             }
         }
     }

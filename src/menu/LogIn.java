@@ -1,4 +1,10 @@
-package src;
+package src.menu;
+
+import src.account.AccountStorage;
+import src.account.Admin;
+import src.account.RegularUser;
+import src.core.ErrorMessages;
+import src.util.Input;
 import java.io.IOException;
 import java.util.Scanner;
 
@@ -17,7 +23,7 @@ public class LogIn {
         switch (userChoice) {
             case "1" -> loginAdmin();
             case "2" -> loginRegularUser();
-            default -> System.out.println(ErrorMessages.switcherror.INVALID_CHOICE);
+            default -> System.out.println(ErrorMessages.SwitchError.INVALID_CHOICE);
         }
     }
 
@@ -32,6 +38,7 @@ public class LogIn {
             for (RegularUser user : AccountStorage.getInstance().loadUsers()) {
                 if (user.getUsername().equals(username) && user.checkPassword(password)) {
                     System.out.println("Login successful! Welcome, " + user.getUsername() + "!");
+                    UserInterface.getInstance().userUI();
                     return;
                 }
             }

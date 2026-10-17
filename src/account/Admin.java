@@ -1,4 +1,4 @@
-package src;
+package src.account;
 
 public class Admin extends User {
     public Admin(String username, String password) {

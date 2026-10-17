@@ -1,4 +1,4 @@
-package src;
+package src.account;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -22,7 +22,7 @@ public class AccountStorage {
     }
 
     private AccountStorage() {
-        this.filePath = Path.of("src", "files", "USER_ACCOUNTS.txt");
+        this.filePath = Path.of("src", "files", "USER_ACCOUNTS.TXT");
         this.adminFilePath = Path.of("src", "files", "ADMIN_ACCOUNTS.txt");
     }
 

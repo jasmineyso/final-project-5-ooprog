@@ -1,4 +1,4 @@
-package src;
+package src.account;
 
 public abstract class User {
     private String username;
@@ -13,8 +13,8 @@ public abstract class User {
         return username;
     }
 
-    // Accessible inside the src package for saving accounts.
-    String getPassword() {
+    // Used by account storage when persisting credentials.
+    public String getPassword() {
         return password;
     }
 

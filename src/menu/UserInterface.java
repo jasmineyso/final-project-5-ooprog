@@ -1,4 +1,7 @@
-package src;
+package src.menu;
+
+import src.core.ErrorMessages;
+import src.util.Input;
 
 import java.util.Scanner;
 
@@ -48,13 +51,14 @@ public class UserInterface {
                     System.out.println("Logging out...");
                     isTrue = false;
                 }
-                default -> System.out.println(ErrorMessages.switcherror.INVALID_CHOICE);
+                default -> System.out.println(ErrorMessages.SwitchError.INVALID_CHOICE);
             }
 
         }
     }
 
     public void userUI() {
-        // Add your regular user interface logic here
+        System.out.println("=== User Menu ===");
+        System.out.println("Logging out...");
     }
 }

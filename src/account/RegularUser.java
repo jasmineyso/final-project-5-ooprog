@@ -1,4 +1,4 @@
-package src;
+package src.account;
 
 public class RegularUser extends User {
     private String email;
