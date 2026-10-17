@@ -3,11 +3,7 @@ package src;
 import java.util.Scanner;
 
 public class SignUp {
-    Scanner sc;
-
-    public SignUp(Scanner sc) {
-        this.sc = sc;
-    }
+    private final Scanner sc = Input.getScanner();
 
     public RegularUser signUp() {
 

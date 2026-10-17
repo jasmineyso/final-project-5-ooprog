@@ -4,11 +4,7 @@ import java.util.Scanner;
 
 public class LogIn {
 
-    Scanner sc;
-
-    public LogIn(Scanner sc) {
-        this.sc = sc;
-    }
+    private final Scanner sc = Input.getScanner();
 
     public void userType() {
         System.out.println("What type of user are you?:");
@@ -20,7 +16,7 @@ public class LogIn {
 
         switch (userChoice) {
             case "1" -> loginAdmin();
-            case "2" ->loginRegularUser();
+            case "2" -> loginRegularUser();
             default -> System.out.println(ErrorMessages.switcherror.INVALID_CHOICE);
         }
     }
@@ -33,8 +29,7 @@ public class LogIn {
         String password = sc.nextLine();
 
         try {
-            AccountStorage accountStorage = new AccountStorage();
-            for (RegularUser user : accountStorage.loadUsers()) {
+            for (RegularUser user : AccountStorage.getInstance().loadUsers()) {
                 if (user.getUsername().equals(username) && user.checkPassword(password)) {
                     System.out.println("Login successful! Welcome, " + user.getUsername() + "!");
                     return;
@@ -47,7 +42,23 @@ public class LogIn {
     }
 
     public void loginAdmin() {
-        // Add your admin login logic here
-        // Use the USER_ACCOUNTS list to validate the username and password
+        System.out.println("=== Admin Login ===");
+        System.out.print("Enter Username: ");
+        String username = sc.nextLine().trim();
+        System.out.print("Enter Password: ");
+        String password = sc.nextLine();
+
+        try {
+            for (Admin user : AccountStorage.getInstance().loadAdmins()) {
+                if (user.getUsername().equals(username) && user.checkPassword(password)) {
+                    System.out.println("Login successful! Welcome, " + user.getUsername() + "!");
+                    UserInterface.getInstance().adminUI();
+                    return;
+                }
+            }
+            System.out.println(ErrorMessages.LogInErrors.INVALID_CREDENTIALS);
+        } catch (IOException e) {
+            System.out.println(ErrorMessages.AccountErrors.LOAD_FAILED + e.getMessage());
+        }
     }
 }

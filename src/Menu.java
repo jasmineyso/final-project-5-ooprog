@@ -5,18 +5,16 @@ import java.util.Scanner;
 
 public class Menu {
 
-    Scanner sc;
+    private final Scanner sc = Input.getScanner();
     LogIn login;
     SignUp signup;
     private ArrayList<RegularUser> users = new ArrayList<>();
-    private AccountStorage accountStorage = new AccountStorage();
 
-    public Menu(Scanner sc) {
-        this.sc = sc;
-        this.login = new LogIn(sc);
-        this.signup = new SignUp(sc);
+    public Menu() {
+        this.login = new LogIn();
+        this.signup = new SignUp();
         try {
-            users = accountStorage.loadUsers();
+            users = AccountStorage.getInstance().loadUsers();
         } catch (IOException e) {
             System.out.println(ErrorMessages.AccountErrors.LOAD_FAILED + e.getMessage());
         }
@@ -43,7 +41,7 @@ public class Menu {
                 case "2" -> {
                     RegularUser user = signup.signUp();
                     try {
-                        accountStorage.saveUser(user);
+                        AccountStorage.getInstance().saveUser(user);
                         users.add(user);
                         System.out.println("Account created and saved successfully!");
                     } catch (IOException e) {
@@ -60,6 +58,5 @@ public class Menu {
                 default -> System.out.println(ErrorMessages.switcherror.INVALID_CHOICE);
             }
         }
-        sc.close();
     }
 }

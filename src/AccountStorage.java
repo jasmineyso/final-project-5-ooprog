@@ -10,21 +10,27 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 
 public class AccountStorage {
+    private static AccountStorage instance;
     private final Path filePath;
+    private final Path adminFilePath;
 
-    public AccountStorage() {
-        this(Path.of("src", "files", "USER_ACCOUNTS.txt"));
+    public static AccountStorage getInstance() {
+        if (instance == null) {
+            instance = new AccountStorage();
+        }
+        return instance;
     }
 
-    public AccountStorage(Path filePath) {
-        this.filePath = filePath;
+    private AccountStorage() {
+        this.filePath = Path.of("src", "files", "USER_ACCOUNTS.txt");
+        this.adminFilePath = Path.of("src", "files", "ADMIN_ACCOUNTS.txt");
     }
 
     public void saveUser(RegularUser user) throws IOException {
         // One line per account: username|password|email|phoneNumber|address.
         String[] details = {
-            user.getUsername(), user.getPassword(), user.getEmail(),
-            user.getPhoneNumber(), user.getAddress()
+                user.getUsername(), user.getPassword(), user.getEmail(),
+                user.getPhoneNumber(), user.getAddress()
         };
         for (int i = 0; i < details.length; i++) {
             if (details[i].contains("\n") || details[i].contains("\r")) {
@@ -43,6 +49,27 @@ public class AccountStorage {
         }
     }
 
+    public ArrayList<Admin> loadAdmins() throws IOException {
+        ArrayList<Admin> admins = new ArrayList<>();
+        try (BufferedReader reader = Files.newBufferedReader(adminFilePath, StandardCharsets.UTF_8)) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.isBlank()) {
+                    continue;
+                }
+                String[] details = line.split("\\|", -1);
+                if (details.length != 2 || details[0].isBlank() || details[1].isBlank()) {
+                    throw new IOException("Each admin account line must contain username|password.");
+                }
+                for (int i = 0; i < details.length; i++) {
+                    details[i] = details[i].replace("%7C", "|").replace("%25", "%");
+                }
+                admins.add(new Admin(details[0], details[1]));
+            }
+        }
+        return admins;
+    }
+
     public ArrayList<RegularUser> loadUsers() throws IOException {
         ArrayList<RegularUser> users = new ArrayList<>();
         if (Files.notExists(filePath)) {
@@ -51,7 +78,7 @@ public class AccountStorage {
 
         try (BufferedReader reader = Files.newBufferedReader(filePath, StandardCharsets.UTF_8)) {
             String line = reader.readLine();
-            
+
             while (line != null) {
                 String[] details = line.split("\\|", -1);
                 if (details.length != 5) {
@@ -61,8 +88,7 @@ public class AccountStorage {
                     details[i] = details[i].replace("%7C", "|").replace("%25", "%");
                 }
                 RegularUser user = new RegularUser(
-                    details[0], details[1], details[2], details[3], details[4]
-                );
+                        details[0], details[1], details[2], details[3], details[4]);
                 users.add(user);
                 line = reader.readLine();
             }
