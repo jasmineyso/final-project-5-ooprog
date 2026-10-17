@@ -13,7 +13,7 @@ public abstract class User {
         return username;
     }
 
-    // Used by account storage when persisting credentials.
+    // Accessible inside the src package for saving accounts.
     public String getPassword() {
         return password;
     }

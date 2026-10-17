@@ -1,10 +1,11 @@
 package src.menu;
 
+import java.util.Scanner;
+
 import src.account.RegularUser;
 import src.core.ErrorMessages;
+import src.core.ErrorMessages.SignUpErrors;
 import src.util.Input;
-
-import java.util.Scanner;
 
 public class SignUp {
     private final Scanner sc = Input.getScanner();
