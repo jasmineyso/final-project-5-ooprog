@@ -22,7 +22,7 @@ public class AccountStorage {
     }
 
     private AccountStorage() {
-        this.filePath = Path.of("src", "files", "USER_ACCOUNTS.TXT");
+        this.filePath = Path.of("src", "files", "USER_ACCOUNTS.txt");
         this.adminFilePath = Path.of("src", "files", "ADMIN_ACCOUNTS.txt");
     }
 
