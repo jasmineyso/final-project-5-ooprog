@@ -1,8 +1,12 @@
 package src.menu;
 
+import java.io.IOException;
 import java.util.Scanner;
 
-import src.util.Display;
+import src.account.AccountStorage;
+import src.account.Admin;
+import src.account.RegularUser;
+import src.core.ErrorMessages;
 
 public class LogIn {
 
@@ -13,28 +17,46 @@ public class LogIn {
     }
 
     public void loginAdmin() {
-        Display.title("Admin Log In");
-        Display.prompt("Enter admin username");
+        System.out.println();
+        System.out.println("=== Admin Log In ===");
+        System.out.print("Enter admin username: ");
         String username = sc.nextLine();
-        Display.prompt("Enter admin password");
+        System.out.print("Enter admin password: ");
         String password = sc.nextLine();
 
-        // TODO: check the username and password against ADMIN_ACCOUNTS.
-        // If correct:  new AdminMenu(admin).start();
-        // If wrong:    Display.error(ErrorMessages.LogInErrors.INVALID_CREDENTIALS);
-        // Either way, the program returns to the "What type of user are you?" screen afterwards.
+        try {
+            for (Admin user : AccountStorage.getInstance().loadAdmins()) {
+                if (user.getUsername().equals(username) && user.checkPassword(password)) {
+                    System.out.println("Login successful! Welcome, " + user.getUsername() + "!");
+                    UserInterface.getInstance().adminUI();
+                    return;
+                }
+            }
+            System.out.println(ErrorMessages.LogInErrors.INVALID_CREDENTIALS);
+        } catch (IOException e) {
+            System.out.println(ErrorMessages.AccountErrors.LOAD_FAILED + e.getMessage());
+        }
     }
 
     public void loginRegularUser() {
-        Display.title("Log In");
-        Display.prompt("Enter username");
+        System.out.println();
+        System.out.println("=== Log In ===");
+        System.out.print("Enter username: ");
         String username = sc.nextLine();
-        Display.prompt("Enter password");
+        System.out.print("Enter password: ");
         String password = sc.nextLine();
 
-        // TODO: check the username and password against USER_ACCOUNTS.
-        // If correct:  open the passenger menu.
-        // If wrong:    Display.error(ErrorMessages.LogInErrors.INVALID_CREDENTIALS);
-        // Either way, the program returns to the Sign Up / Log In screen afterwards.
+        try {
+            for (RegularUser user : AccountStorage.getInstance().loadUsers()) {
+                if (user.getUsername().equals(username) && user.checkPassword(password)) {
+                    System.out.println("Login successful! Welcome, " + user.getUsername() + "!");
+                    UserInterface.getInstance().userUI();
+                    return;
+                }
+            }
+            System.out.println(ErrorMessages.LogInErrors.INVALID_CREDENTIALS);
+        } catch (IOException e) {
+            System.out.println(ErrorMessages.AccountErrors.LOAD_FAILED + e.getMessage());
+        }
     }
 }

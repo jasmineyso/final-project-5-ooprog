@@ -1,19 +1,30 @@
 package src.menu.admin;
 
-import src.menu.BaseMenu;
+import src.util.Input;
 
 /**
  * Admin > Manage User Accounts
  * View, search, and delete registered passenger accounts.
  */
-public class AdminAccountMenu extends BaseMenu {
+public class AdminAccountMenu {
 
-    @Override
+    /** Runs this submenu until the administrator selects Back. */
+    public void start() {
+        boolean running = true;
+        while (running) {
+            running = handleChoice(Input.askChoice(getTitle(), getOptions()));
+        }
+    }
+
+    private void notYetAvailable(String feature) {
+        System.out.println(feature + " is not available yet.");
+    }
+
+
     protected String getTitle() {
         return "Manage User Accounts";
     }
 
-    @Override
     protected String[] getOptions() {
         return new String[] {
                 "View All Registered Users",
@@ -23,7 +34,6 @@ public class AdminAccountMenu extends BaseMenu {
         };
     }
 
-    @Override
     protected boolean handleChoice(int choice) {
         switch (choice) {
             case 1 -> viewAllUsers();

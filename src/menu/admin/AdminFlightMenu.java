@@ -1,19 +1,41 @@
 package src.menu.admin;
 
-import src.menu.BaseMenu;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Locale;
+import java.util.function.Predicate;
+
+import src.flight.Flight;
+import src.flight.FlightStorage;
+import src.util.Input;
+import src.util.Validator;
 
 /**
  * Admin > Manage Flights
  * Add, update, change status, remove, search, and view flights.
  */
-public class AdminFlightMenu extends BaseMenu {
+public class AdminFlightMenu {
 
-    @Override
+    /** Runs this submenu until the administrator selects Back. */
+    public void start() {
+        boolean running = true;
+        while (running) {
+            running = handleChoice(Input.askChoice(getTitle(), getOptions()));
+        }
+    }
+
+    private void notYetAvailable(String feature) {
+        System.out.println(feature + " is not available yet.");
+    }
+
+
     protected String getTitle() {
         return "Manage Flights";
     }
 
-    @Override
     protected String[] getOptions() {
         return new String[] {
                 "Add Flight",
@@ -26,7 +48,6 @@ public class AdminFlightMenu extends BaseMenu {
         };
     }
 
-    @Override
     protected boolean handleChoice(int choice) {
         switch (choice) {
             case 1 -> addFlight();
@@ -42,22 +63,69 @@ public class AdminFlightMenu extends BaseMenu {
         return true;
     }
 
-    private void addFlight() {
-        // TODO: ask for each field, validating with Validator as you go:
-        //   flight number  -> isValidFlightNumber, and must NOT already exist (flightNumberExists)
-        //   gate number
-        //   origin         -> isValidLocation
-        //   destination    -> isValidLocation + isDifferentLocation(origin, destination)
-        //   departure time -> parseDateTime + isFutureDateTime
-        //   arrival time   -> parseDateTime + isArrivalAfterDeparture + isReasonableFlightDuration
-        //   fare per service class, number of seats -> isIntInRange
-        // then create the Flight and save it through the flight storage.
-        notYetAvailable("Add Flight");
+    public void addFlight() {
+        System.out.println();
+        System.out.println("=== Add Flight ===");
+        FlightStorage storage = FlightStorage.getInstance();
+        try {
+            List<String> existingNumbers = storage.loadFlightNumbers();
+            String flightNumber = Validator.normalizeFlightNumber(askField("Flight Number (e.g. PR102)",
+                    value -> Validator.isValidFlightNumber(value)
+                            && !Validator.flightNumberExists(value, existingNumbers),
+                    "Enter a valid flight number that does not already exist."));
+            String gateNumber = askField("Gate Number (e.g. 12 or A12)",
+                    value -> value.matches("[A-Za-z0-9]{1,10}"),
+                    "Gate number must contain 1 to 10 letters or digits.").toUpperCase(Locale.ROOT);
+            String origin = Validator.normalizeLocation(askField("Origin", Validator::isValidLocation,
+                    "Enter a valid origin (e.g. Manila)."));
+            String destination = Validator.normalizeLocation(askField("Destination",
+                    value -> Validator.isValidLocation(value) && Validator.isDifferentLocation(origin, value),
+                    "Enter a valid destination different from the origin."));
+            LocalDateTime departure = Validator.parseDateTime(askField(
+                    "Departure Time (" + Validator.DATE_TIME_FORMAT_HINT + ")",
+                    value -> Validator.isFutureDateTime(Validator.parseDateTime(value)),
+                    "Enter a valid future departure time."));
+            LocalDateTime arrival = Validator.parseDateTime(askField(
+                    "Arrival Time (" + Validator.DATE_TIME_FORMAT_HINT + ")",
+                    value -> Validator.isReasonableFlightDuration(departure, Validator.parseDateTime(value)),
+                    "Arrival must be after departure and within 24 hours."));
+            BigDecimal economyFare = askFare("Economy");
+            BigDecimal businessFare = askFare("Business");
+            BigDecimal firstClassFare = askFare("First Class");
+            int seats = Integer.parseInt(askField("Number of Seats (total)",
+                    value -> Validator.isIntInRange(value, 1, Integer.MAX_VALUE),
+                    "Enter a positive whole number of seats."));
+
+            storage.saveFlight(new Flight(flightNumber, gateNumber, origin, destination,
+                    departure, arrival, economyFare, businessFare, firstClassFare, seats));
+            System.out.println("Flight " + flightNumber + " added and saved to AVAILABLE_FLIGHTS.txt.");
+        } catch (IOException e) {
+            System.out.println("Could not add flight: " + e.getMessage());
+        }
     }
 
-    private void updateFlight() {
+    private String askField(String prompt, Predicate<String> validation, String error) {
+        while (true) {
+            System.out.print(prompt + ": ");
+            String value = Input.getScanner().nextLine().trim();
+            if (validation.test(value)) {
+                return value;
+            }
+            System.out.println(error);
+        }
+    }
+
+    private BigDecimal askFare(String serviceClass) {
+        String value = askField("Fare for " + serviceClass,
+                input -> input.matches("[0-9]{1,10}(\\.[0-9]{1,2})?")
+                        && new BigDecimal(input).signum() > 0,
+                "Enter a positive fare with at most two decimal places (e.g. 1500.00).");
+        return new BigDecimal(value).setScale(2, RoundingMode.UNNECESSARY);
+    }
+
+    public void updateFlight() {
         // TODO: ask for flight number (must exist), then which field to change.
-        int field = askChoice("What do you want to update?",
+        int field = Input.askChoice("What do you want to update?",
                 "Departure and Arrival Time",
                 "Fare per Service Class",
                 "Number of Seats",
@@ -71,9 +139,9 @@ public class AdminFlightMenu extends BaseMenu {
         }
     }
 
-    private void updateFlightStatus() {
+    public void updateFlightStatus() {
         // TODO: ask for flight number first (must exist).
-        int status = askChoice("Set Flight Status",
+        int status = Input.askChoice("Set Flight Status",
                 "Scheduled",
                 "Rescheduled",
                 "Delayed",
@@ -94,13 +162,13 @@ public class AdminFlightMenu extends BaseMenu {
         }
     }
 
-    private void removeFlight() {
+    public void removeFlight() {
         // TODO: ask for flight number (must exist), ask "Are you sure? (Y/N)", then remove it.
         notYetAvailable("Remove Flight");
     }
 
-    private void searchFlights() {
-        int by = askChoice("Search Flights",
+    public void searchFlights() {
+        int by = Input.askChoice("Search Flights",
                 "By Flight Number",
                 "By Origin",
                 "By Destination",
@@ -116,8 +184,8 @@ public class AdminFlightMenu extends BaseMenu {
         }
     }
 
-    private void viewFlights() {
-        int view = askChoice("View Flights",
+    public void viewFlights() {
+        int view = Input.askChoice("View Flights",
                 "All Flights (A-Z)",
                 "Filter by Date",
                 "Filter by Status",

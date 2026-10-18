@@ -1,13 +1,13 @@
 package src.menu.admin;
 
 import src.account.Admin;
-import src.menu.BaseMenu;
+import src.util.Input;
 
 /**
  * The admin's main menu, shown right after a successful admin login.
  * It only routes to the three sub-menus; each sub-menu holds the actual features.
  */
-public class AdminMenu extends BaseMenu {
+public class AdminMenu {
 
     private final Admin admin;
 
@@ -15,19 +15,19 @@ public class AdminMenu extends BaseMenu {
         this.admin = admin;
     }
 
-    @Override
     public void start() {
         System.out.println();
         System.out.println("Welcome, " + admin.getUsername() + "!");
-        super.start();
+        boolean running = true;
+        while (running) {
+            running = handleChoice(Input.askChoice(getTitle(), getOptions()));
+        }
     }
 
-    @Override
     protected String getTitle() {
         return "Admin Menu";
     }
 
-    @Override
     protected String[] getOptions() {
         return new String[] {
                 "Manage Flights",
@@ -37,7 +37,6 @@ public class AdminMenu extends BaseMenu {
         };
     }
 
-    @Override
     protected boolean handleChoice(int choice) {
         switch (choice) {
             case 1 -> new AdminFlightMenu().start();

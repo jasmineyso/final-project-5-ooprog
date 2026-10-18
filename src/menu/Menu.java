@@ -7,7 +7,6 @@ import java.util.Scanner;
 import src.account.AccountStorage;
 import src.account.RegularUser;
 import src.core.ErrorMessages;
-import src.util.Display;
 import src.util.Input;
 
 public class Menu {
@@ -23,13 +22,13 @@ public class Menu {
         try {
             users = AccountStorage.getInstance().loadUsers();
         } catch (IOException e) {
-            Display.error(ErrorMessages.AccountErrors.LOAD_FAILED + e.getMessage());
+            System.out.println(ErrorMessages.AccountErrors.LOAD_FAILED + e.getMessage());
         }
     }
 
     /** First screen of the program: pick Admin or Regular User. */
     public void welcomePage() {
-        Display.message("Welcome to the ___ Airline!");
+        System.out.println("Welcome to the ___ Airline!");
 
         boolean running = true;
         while (running) {
@@ -42,7 +41,7 @@ public class Menu {
                 case 1 -> login.loginAdmin();
                 case 2 -> regularUserPage();
                 case 3 -> {
-                    Display.message("Thank you for using the ___ Airline. Goodbye!");
+                    System.out.println("Thank you for using the ___ Airline. Goodbye!");
                     running = false;
                 }
             }
@@ -71,9 +70,9 @@ public class Menu {
         try {
             AccountStorage.getInstance().saveUser(user);
             users.add(user);
-            Display.success("Account created and saved successfully! You can now log in.");
+            System.out.println("Account created and saved successfully! You can now log in.");
         } catch (IOException e) {
-            Display.error(ErrorMessages.AccountErrors.SAVE_FAILED + e.getMessage());
+            System.out.println(ErrorMessages.AccountErrors.SAVE_FAILED + e.getMessage());
         }
     }
 }
