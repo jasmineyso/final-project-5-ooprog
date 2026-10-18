@@ -27,117 +27,26 @@ public class RegularUserOperations {
     }
 
     public void viewFlights(){
-        System.out.println("1. View All Flights");
-        System.out.println("2. Search by Origin and Destination");
-        
-        System.out.print("Enter your choice: ");
-        String userChoice = sc.nextLine().trim();
+        boolean isValid = false;
 
-        switch (userChoice) {
-            case "1" -> viewAllFlights();
-            case "2" -> searchByOriginAndDestination();
-            default -> System.out.println(ErrorMessages.SwitchError.INVALID_CHOICE);
-        }
-    }
+        viewFlightOperations viewFlights = new viewFlightOperations();
 
-    private void viewAllFlights(){
-        try {
-            System.out.println();
-            System.out.println("=== Available Flights ===");
-            List<Flight> flights = FlightStorage.getInstance().loadFlights();
-            if (flights.isEmpty()) {
-                System.out.println("No flights are available yet.");
-                return;
-            }
-            flightTable(flights);
-        } catch (IOException e) {
-            System.out.println("Could not load available flights: " + e.getMessage());
-        }
-    }
+        while (!isValid){
+            System.out.println("1. View All Flights");
+            System.out.println("2. Search by Origin and Destination");
+            
+            System.out.print("Enter your choice: ");
+            String userChoice = sc.nextLine().trim();
 
-    private void searchByOriginAndDestination(){
-        System.out.println();
-        System.out.println("=== Search by Origin and Destination ===");
-        try {
-            List<Flight> flights = FlightStorage.getInstance().loadFlights();
-            if (flights.isEmpty()) {
-                System.out.println("No flights are available yet.");
-                return;
-            }
-            String origin = askLocation("Origin");
-            String destination = askLocation("Destination");
-            List<Flight> matches = new ArrayList<>();
-            for (Flight flight : flights) {
-                if (Validator.normalizeLocation(flight.origin()).equalsIgnoreCase(origin)
-                        && Validator.normalizeLocation(flight.destination()).equalsIgnoreCase(destination)) {
-                    matches.add(flight);
+            switch (userChoice) {
+                case "1" -> {
+                    viewFlights.viewAllFlights(); return;
                 }
-            }
-            System.out.println();
-            System.out.println("=== Flights from " + origin + " to " + destination + " ===");
-            flightTable(matches);
-        } catch (IOException e) {
-            System.out.println("Could not load available flights: " + e.getMessage());
-        }
-    }
-
-    private String askLocation(String label) {
-        while (true) {
-            System.out.print(label + ": ");
-            String location = Validator.normalizeLocation(sc.nextLine());
-            if (Validator.isValidLocation(location)) {
-                return location;
-            }
-            System.out.println("Enter a valid " + label.toLowerCase() + " (e.g. Manila).");
-        }
-    }
-
-    /** Each column fits its heading and the longest value in the displayed flights. */
-    private void flightTable(List<Flight> flights) {
-        if (flights.isEmpty()) {
-            System.out.println("No matching flights found.");
-            return;
-        }
-        String[] headers = { "Flight Number", "Gate", "Origin", "Destination", "Departure", "Arrival",
-                "Economy Fare", "Business Fare", "First Class Fare", "Seats" };
-        String[][] rows = new String[flights.size()][headers.length];
-        int[] widths = new int[headers.length];
-        for (int column = 0; column < headers.length; column++) {
-            widths[column] = headers[column].length();
-        }
-        for (int row = 0; row < flights.size(); row++) {
-            Flight flight = flights.get(row);
-            rows[row] = new String[] {
-                    flight.flightNumber(), flight.gateNumber(), flight.origin(), flight.destination(),
-                    Validator.formatDateTime(flight.departureTime()),
-                    Validator.formatDateTime(flight.arrivalTime()),
-                    flight.economyFare().toPlainString(), flight.businessFare().toPlainString(),
-                    flight.firstClassFare().toPlainString(), Integer.toString(flight.numberOfSeats())
-            };
-            for (int column = 0; column < headers.length; column++) {
-                widths[column] = Math.max(widths[column], rows[row][column].length());
+                case "2" -> {
+                    viewFlights.searchByOriginAndDestination(); return;
+                }
+                default -> System.out.println(ErrorMessages.SwitchError.INVALID_CHOICE);
             }
         }
-        StringBuilder border = new StringBuilder("+");
-        for (int width : widths) {
-            border.append("-".repeat(width + 2)).append('+');
-        }
-        System.out.println(border.toString());
-        tableRow(headers, widths);
-        System.out.println(border.toString());
-        for (String[] row : rows) {
-            tableRow(row, widths);
-        }
-        System.out.println(border.toString());
-    }
-
-    private void tableRow(String[] values, int[] widths) {
-        StringBuilder row = new StringBuilder("|");
-        for (int column = 0; column < values.length; column++) {
-            row.append(' ').append(values[column])
-                    .append(" ".repeat(widths[column] - values[column].length()))
-                    .append(" |");
-        }
-        System.out.println(row.toString());
     }
 }
