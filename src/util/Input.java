@@ -19,15 +19,18 @@ public final class Input {
     public static int askChoice(String title, String... options) {
         Scanner sc = getScanner();
         while (true) {
-            Display.title(title);
-            Display.options(options);
-            Display.prompt("Enter your choice");
+            System.out.println();
+            System.out.println("=== " + title + " ===");
+            for (int i = 0; i < options.length; i++) {
+                System.out.println("[" + (i + 1) + "] " + options[i]);
+            }
+            System.out.print("Enter your choice: ");
             String input = sc.nextLine();
 
             if (Validator.isIntInRange(input, 1, options.length)) {
                 return Integer.parseInt(input.trim());
             }
-            Display.error(ErrorMessages.SwitchError.INVALID_CHOICE);
+            System.out.println(ErrorMessages.SwitchError.INVALID_CHOICE);
         }
     }
 }

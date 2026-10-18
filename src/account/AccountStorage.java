@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 
+
 public class AccountStorage {
     private static AccountStorage instance;
     private final Path filePath;
@@ -22,8 +23,14 @@ public class AccountStorage {
     }
 
     private AccountStorage() {
-        this.filePath = Path.of("src", "files", "USER_ACCOUNTS.txt");
-        this.adminFilePath = Path.of("src", "files", "ADMIN_ACCOUNTS.txt");
+        // The IDE may launch from the workspace containing the project folder.
+        Path accountDirectory = Path.of("src", "files");
+        Path workspaceAccountDirectory = Path.of("final-project-5-ooprog", "src", "files");
+        if (Files.isDirectory(workspaceAccountDirectory)) {
+            accountDirectory = workspaceAccountDirectory;
+        }
+        this.filePath = accountDirectory.resolve("USER_ACCOUNTS.txt");
+        this.adminFilePath = accountDirectory.resolve("ADMIN_ACCOUNTS.txt");
     }
 
     public void saveUser(RegularUser user) throws IOException {

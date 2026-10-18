@@ -4,7 +4,6 @@ import java.util.Scanner;
 
 import src.account.RegularUser;
 import src.core.ErrorMessages;
-import src.core.ErrorMessages.SignUpErrors;
 import src.util.Input;
 
 public class SignUp {
