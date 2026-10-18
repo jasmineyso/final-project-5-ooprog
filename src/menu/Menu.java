@@ -22,7 +22,7 @@ public class Menu {
         try {
             users = AccountStorage.getInstance().loadUsers();
         } catch (IOException e) {
-            System.out.println(ErrorMessages.AccountErrors.LOAD_FAILED + e.getMessage());
+            System.out.println(ErrorMessages.LOAD_FAILED + e.getMessage());
         }
     }
 
@@ -72,7 +72,7 @@ public class Menu {
             users.add(user);
             System.out.println("Account created and saved successfully! You can now log in.");
         } catch (IOException e) {
-            System.out.println(ErrorMessages.AccountErrors.SAVE_FAILED + e.getMessage());
+            System.out.println(ErrorMessages.SAVE_FAILED + e.getMessage());
         }
     }
 }

@@ -13,7 +13,7 @@ import java.util.List;
 import src.util.Validator;
 
 public final class FlightStorage {
-    private static final FlightStorage INSTANCE = new FlightStorage();
+    public static FlightStorage INSTANCE;
     private final Path filePath;
 
     private FlightStorage() {
@@ -27,6 +27,9 @@ public final class FlightStorage {
     }
 
     public static FlightStorage getInstance() {
+        if (INSTANCE == null){
+            INSTANCE = new FlightStorage();
+        }
         return INSTANCE;
     }
 

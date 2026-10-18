@@ -84,7 +84,7 @@ public class UserInterface {
                     System.out.println("Logging out...");
                     isTrue = false;
                 }
-                default -> System.out.println(ErrorMessages.SwitchError.INVALID_CHOICE);
+                default -> System.out.println(ErrorMessages.INVALID_CHOICE);
             }
         }
     }
@@ -126,7 +126,7 @@ public class UserInterface {
                     System.out.println("Logging out...");
                     isTrue = false;
                 }
-                default -> System.out.println(ErrorMessages.SwitchError.INVALID_CHOICE);
+                default -> System.out.println(ErrorMessages.INVALID_CHOICE);
             }
         }
 

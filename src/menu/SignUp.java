@@ -20,7 +20,7 @@ public class SignUp {
             fullName = sc.nextLine().trim();
             isFullNameValid = !fullName.isEmpty();
             if (!isFullNameValid) {
-                System.out.println(ErrorMessages.SignUpErrors.INVALID_USERNAME);
+                System.out.println(ErrorMessages.INVALID_USERNAME);
             }
         }
 
@@ -31,7 +31,7 @@ public class SignUp {
             password = sc.nextLine();
             isPasswordValid = !password.trim().isEmpty();
             if (!isPasswordValid) {
-                System.out.println(ErrorMessages.SignUpErrors.INVALID_PASSWORD);
+                System.out.println(ErrorMessages.INVALID_PASSWORD);
             }
         }
 
@@ -42,7 +42,7 @@ public class SignUp {
             email = sc.nextLine().trim();
             isEmailValid = email.matches("[^\\s@]+@[^\\s@.]+(?:\\.[^\\s@.]+)+");
             if (!isEmailValid) {
-                System.out.println(ErrorMessages.SignUpErrors.INVALID_EMAIL);
+                System.out.println(ErrorMessages.INVALID_EMAIL);
             }
         }
 
@@ -53,7 +53,7 @@ public class SignUp {
             phoneNumber = sc.nextLine().trim();
             isPhoneNumberValid = phoneNumber.matches("\\+?[0-9]+");
             if (!isPhoneNumberValid) {
-                System.out.println(ErrorMessages.SignUpErrors.INVALID_PHONE_NUMBER);
+                System.out.println(ErrorMessages.INVALID_PHONE_NUMBER);
             }
         }
 
@@ -64,7 +64,7 @@ public class SignUp {
             address = sc.nextLine().trim();
             isAddressValid = !address.isEmpty();
             if (!isAddressValid) {
-                System.out.println(ErrorMessages.SignUpErrors.INVALID_ADDRESS);
+                System.out.println(ErrorMessages.INVALID_ADDRESS);
             }
         }
 

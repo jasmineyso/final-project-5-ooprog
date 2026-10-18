@@ -30,7 +30,7 @@ public final class Input {
             if (Validator.isIntInRange(input, 1, options.length)) {
                 return Integer.parseInt(input.trim());
             }
-            System.out.println(ErrorMessages.SwitchError.INVALID_CHOICE);
+            System.out.println(ErrorMessages.INVALID_CHOICE);
         }
     }
 }
