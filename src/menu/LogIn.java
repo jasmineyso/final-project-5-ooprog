@@ -32,9 +32,9 @@ public class LogIn {
                     return;
                 }
             }
-            System.out.println(ErrorMessages.LogInErrors.INVALID_CREDENTIALS);
+            System.out.println(ErrorMessages.INVALID_CREDENTIALS);
         } catch (IOException e) {
-            System.out.println(ErrorMessages.AccountErrors.LOAD_FAILED + e.getMessage());
+            System.out.println(ErrorMessages.LOAD_FAILED + e.getMessage());
         }
     }
 
@@ -54,9 +54,9 @@ public class LogIn {
                     return;
                 }
             }
-            System.out.println(ErrorMessages.LogInErrors.INVALID_CREDENTIALS);
+            System.out.println(ErrorMessages.INVALID_CREDENTIALS);
         } catch (IOException e) {
-            System.out.println(ErrorMessages.AccountErrors.LOAD_FAILED + e.getMessage());
+            System.out.println(ErrorMessages.LOAD_FAILED + e.getMessage());
         }
     }
 }

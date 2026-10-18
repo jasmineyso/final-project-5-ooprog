@@ -1,16 +1,11 @@
 package src.menu.regular_user;
 
-
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Scanner;
 
 import src.core.ErrorMessages;
-import src.flight.Flight;
 import src.flight.FlightStorage;
 import src.util.Input;
-import src.util.Validator;
 
 public class RegularUserOperations {
     
@@ -29,6 +24,17 @@ public class RegularUserOperations {
     public void viewFlights(){
         boolean isValid = false;
 
+        try{
+            if (FlightStorage.getInstance().loadFlights().isEmpty()){
+                System.out.println("No flights are available yet.");
+                return;
+            }
+        } catch (IOException e){
+            System.out.println("Could not load available flights: " + e.getMessage());
+            return;
+        }
+
+
         viewFlightOperations viewFlights = new viewFlightOperations();
 
         while (!isValid){
@@ -45,7 +51,7 @@ public class RegularUserOperations {
                 case "2" -> {
                     viewFlights.searchByOriginAndDestination(); return;
                 }
-                default -> System.out.println(ErrorMessages.SwitchError.INVALID_CHOICE);
+                default -> System.out.println(ErrorMessages.INVALID_CHOICE);
             }
         }
     }
