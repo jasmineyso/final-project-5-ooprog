@@ -7,6 +7,7 @@ import src.account.AccountStorage;
 import src.account.Admin;
 import src.account.RegularUser;
 import src.core.ErrorMessages;
+import src.util.Display;
 
 public class LogIn {
 
@@ -17,46 +18,52 @@ public class LogIn {
     }
 
     public void loginAdmin() {
-        System.out.println();
-        System.out.println("=== Admin Log In ===");
-        System.out.print("Enter admin username: ");
-        String username = sc.nextLine();
-        System.out.print("Enter admin password: ");
+        Display.title("Admin Log In");
+        Display.prompt("Enter admin username");
+        String username = sc.nextLine().trim();
+        Display.prompt("Enter admin password");
         String password = sc.nextLine();
 
+        Admin admin = findAdmin(username, password);
+        if (admin == null) {
+            Display.error("Invalid username or password. Please try again.");
+            return;
+        }
+        Display.message("Welcome, " + admin.getUsername() + "!");
+        UserInterface.getInstance().adminUI();
+    }
+
+    /** Returns the admin with this username and password, or null if there is none. */
+    private Admin findAdmin(String username, String password) {
         try {
-            for (Admin user : AccountStorage.getInstance().loadAdmins()) {
-                if (user.getUsername().equals(username) && user.checkPassword(password)) {
-                    System.out.println("Login successful! Welcome, " + user.getUsername() + "!");
-                    UserInterface.getInstance().adminUI();
-                    return;
+            for (Admin admin : AccountStorage.getInstance().loadAdmins()) {
+                if (admin.getUsername().equals(username) && admin.checkPassword(password)) {
+                    return admin;
                 }
             }
-            System.out.println(ErrorMessages.INVALID_CREDENTIALS);
         } catch (IOException e) {
-            System.out.println(ErrorMessages.LOAD_FAILED + e.getMessage());
+            Display.error("Admin accounts could not be loaded: " + e.getMessage());
         }
+        return null;
     }
 
     public void loginRegularUser() {
-        System.out.println();
-        System.out.println("=== Log In ===");
-        System.out.print("Enter username: ");
-        String username = sc.nextLine();
-        System.out.print("Enter password: ");
+        Display.title("Log In");
+        Display.prompt("Enter username");
+        String username = sc.nextLine().trim();
+        Display.prompt("Enter password");
         String password = sc.nextLine();
 
         try {
-            for (RegularUser user : AccountStorage.getInstance().loadUsers()) {
-                if (user.getUsername().equals(username) && user.checkPassword(password)) {
-                    System.out.println("Login successful! Welcome, " + user.getUsername() + "!");
-                    UserInterface.getInstance().userUI();
-                    return;
-                }
+            RegularUser user = AccountStorage.getInstance().findUser(username);
+            if (user == null || !user.checkPassword(password)) {
+                Display.error(ErrorMessages.INVALID_CREDENTIALS);
+                return;
             }
-            System.out.println(ErrorMessages.INVALID_CREDENTIALS);
+            Display.message("Login successful! Welcome, " + user.getUsername() + "!");
+            UserInterface.getInstance().userUI(user);
         } catch (IOException e) {
-            System.out.println(ErrorMessages.LOAD_FAILED + e.getMessage());
+            Display.error(ErrorMessages.LOAD_FAILED + e.getMessage());
         }
     }
 }

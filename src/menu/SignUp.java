@@ -1,7 +1,9 @@
 package src.menu;
 
+import java.io.IOException;
 import java.util.Scanner;
 
+import src.account.AccountStorage;
 import src.account.RegularUser;
 import src.core.ErrorMessages;
 import src.util.Input;
@@ -13,14 +15,17 @@ public class SignUp {
 
         System.out.println("=== Sign Up ===");
 
-        String fullName = "";
-        boolean isFullNameValid = false;
-        while (!isFullNameValid) {
-            System.out.print("Enter Full Name: ");
-            fullName = sc.nextLine().trim();
-            isFullNameValid = !fullName.isEmpty();
-            if (!isFullNameValid) {
-                System.out.println(ErrorMessages.INVALID_USERNAME);
+        String username = "";
+        boolean isUsernameValid = false;
+        while (!isUsernameValid) {
+            System.out.print("Create Username: ");
+            username = sc.nextLine().trim();
+            if (!username.matches("[A-Za-z0-9_.]{3,20}")) {
+                System.out.println("Username must be 3 to 20 letters, digits, _ or . (no spaces).");
+            } else if (isUsernameTaken(username)) {
+                System.out.println("That username is already taken. Please choose another.");
+            } else {
+                isUsernameValid = true;
             }
         }
 
@@ -68,6 +73,16 @@ public class SignUp {
             }
         }
 
-        return new RegularUser(fullName, password, email, phoneNumber, address);
+        return new RegularUser(username, password, email, phoneNumber, address);
+    }
+
+    /** True if another account already uses this username (ignores capital letters). */
+    private boolean isUsernameTaken(String username) {
+        try {
+            return AccountStorage.getInstance().findUser(username) != null;
+        } catch (IOException e) {
+            System.out.println("Could not check existing accounts: " + e.getMessage());
+            return false;
+        }
     }
 }

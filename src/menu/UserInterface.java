@@ -2,11 +2,13 @@ package src.menu;
 
 import java.util.Scanner;
 
+import src.account.RegularUser;
 import src.core.ErrorMessages;
 import src.menu.admin.AdminAccountMenu;
 import src.menu.admin.AdminBookingMenu;
 import src.menu.admin.AdminFlightMenu;
 import src.menu.regular_user.RegularUserOperations;
+import src.util.Display;
 import src.util.Input;
 
 public class UserInterface {
@@ -19,8 +21,7 @@ public class UserInterface {
     private static UserInterface instance;
     private final Scanner sc = Input.getScanner();
 
-    private UserInterface() {
-    }
+    private UserInterface() {}
 
     public static UserInterface getInstance() {
         if (instance == null) {
@@ -29,106 +30,48 @@ public class UserInterface {
         return instance;
     }
 
-
-
     public void adminUI() {
-        AdminFlightMenu flights = new AdminFlightMenu();
-        AdminBookingMenu bookings = new AdminBookingMenu();
-        AdminAccountMenu accounts = new AdminAccountMenu();
-        boolean isTrue = true;
-        while (isTrue) {
-            System.out.println("=== Admin Menu ===");
-            System.out.println("1. Add Flight");
-            System.out.println("2. Update Flight");
-            System.out.println("3. Update Flight Status");
-            System.out.println("4. Remove Flight");
-            System.out.println("5. Search Flight");
-            System.out.println("6. View Flights");
-            System.out.println("7. View Passenger Bookings");
-            System.out.println("8. Manage Passenger Bookings");
-            System.out.println("9. Manage User Accounts");
-            System.out.println("10. Log Out");
+        boolean running = true;
+        while (running) {
+            int choice = Input.askChoice("Admin Menu",
+                    "Manage Flights",
+                    "Manage Passenger Bookings",
+                    "Manage User Accounts",
+                    "Log Out");
 
-            System.out.print("Enter your choice: ");
-            String userChoice = sc.nextLine().trim();
-
-            switch (userChoice) {
-                case "1" -> {
-                    flights.addFlight();
+            switch (choice) {
+                case 1 -> new AdminFlightMenu().start();
+                case 2 -> new AdminBookingMenu().start();
+                case 3 -> new AdminAccountMenu().start();
+                case 4 -> {
+                    Display.message("Logging out...");
+                    running = false;
                 }
-                case "2" -> {
-                    flights.updateFlight();
-                }
-                case "3" -> {
-                    flights.updateFlightStatus();
-                }
-                case "4" -> {
-                    flights.removeFlight();
-                }
-                case "5" -> {
-                    flights.searchFlights();
-                }
-                case "6" -> {
-                    flights.viewFlights();
-                }
-                case "7" -> {
-                    bookings.viewAllBookings();
-                }
-                case "8" -> {
-                    bookings.start();
-                }
-                case "9" -> {
-                    accounts.start();
-                }
-                case "10" -> {
-                    System.out.println("Logging out...");
-                    isTrue = false;
-                }
-                default -> System.out.println(ErrorMessages.INVALID_CHOICE);
             }
         }
     }
 
-    public void userUI() {
+    /** The passenger's main menu. 'user' is whoever logged in; bookings will use it. */
+    public void userUI(RegularUser user) {
+        boolean running = true;
+        while (running) {
+            int choice = Input.askChoice("User Menu",
+                    "View Flights",
+                    "View Booked Flights",
+                    "Book a Flight",
+                    "Pay for Booked Flight",
+                    "Update Booked Flight",
+                    "Cancel Booked Flight",
+                    "Log Out");
 
-        boolean isTrue = true;
-        while (isTrue) {
-            System.out.println("=== User Menu ===");
-            System.out.println("1. View Flights");
-            System.out.println("2. View Booked Flights");
-            System.out.println("3. Book a Flight");
-            System.out.println("4. Pay for Booked Flight");
-            System.out.println("5. Update Booked Flight");
-            System.out.println("6. Cancel Booked Flight");
-            System.out.println("7. Log Out");
-
-            System.out.print("Enter your choice: ");
-            String userChoice = sc.nextLine().trim();
-
-            switch (userChoice) {
-                case "1" -> RegularUserOperations.getInstance().viewFlights();
-                case "2" -> {
-
+            switch (choice) {
+                case 1 -> RegularUserOperations.getInstance().viewFlights();
+                case 2, 3, 4, 5, 6 -> Display.message("Not available yet.");
+                case 7 -> {
+                    Display.message("Logging out...");
+                    running = false;
                 }
-                case "3" -> {
-
-                }
-                case "4" -> {
-
-                }
-                case "5" -> {
-
-                }
-                case "6" -> {
-
-                }
-                case "7" -> {
-                    System.out.println("Logging out...");
-                    isTrue = false;
-                }
-                default -> System.out.println(ErrorMessages.INVALID_CHOICE);
             }
         }
-
     }
 }
