@@ -112,14 +112,18 @@ public class AdminFlightMenu {
     }
 
     private String askField(String prompt, Predicate<String> validation, String error) {
-        while (true) {
+        boolean isFieldValid = false;
+        String value = "";
+        while (!isFieldValid) {
             System.out.print(prompt + ": ");
-            String value = Input.getScanner().nextLine().trim();
+            value = Input.getScanner().nextLine().trim();
             if (validation.test(value)) {
-                return value;
+                isFieldValid = true;
+            } else {
+                System.out.println(error);
             }
-            System.out.println(error);
         }
+        return value;
     }
 
     private BigDecimal askFare(String serviceClass) {
@@ -286,7 +290,9 @@ public class AdminFlightMenu {
      */
     private LocalDateTime askDateTime(String label, LocalDate defaultDate,
             Predicate<LocalDateTime> check, String error) {
-        while (true) {
+        boolean isDateTimeValid = false;
+        LocalDateTime dateTime = null;
+        while (!isDateTimeValid) {
             String datePrompt = label + " Date (YYYY-MM-DD)"
                     + (defaultDate == null ? "" : " [Enter = " + defaultDate + "]");
             String dateText = askField(datePrompt,
@@ -298,12 +304,14 @@ public class AdminFlightMenu {
                     Validator::isValidTime,
                     "Enter a real time in 24-hour format (e.g. 09:05 or 21:30)."));
 
-            LocalDateTime dateTime = LocalDateTime.of(date, time);
+            dateTime = LocalDateTime.of(date, time);
             if (check.test(dateTime)) {
-                return dateTime;
+                isDateTimeValid = true;
+            } else {
+                Display.error(error);
             }
-            Display.error(error);
         }
+        return dateTime;
     }
 
     public void removeFlight() {

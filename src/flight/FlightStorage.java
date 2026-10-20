@@ -116,6 +116,7 @@ public final class FlightStorage {
 
     public List<String> loadFlightNumbers() throws IOException {
         List<String> numbers = new ArrayList<>();
+        
         if (Files.exists(filePath)) {
             for (String line : Files.readAllLines(filePath, StandardCharsets.UTF_8)) {
                 if (!line.isBlank()) {

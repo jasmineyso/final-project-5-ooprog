@@ -56,14 +56,18 @@ public class viewFlightOperations {
     }
 
     private String askLocation(String label) {
-        while (true) {
+        boolean isLocationValid = false;
+        String location = "";
+        while (!isLocationValid) {
             System.out.print(label + ": ");
-            String location = Validator.normalizeLocation(sc.nextLine());
+            location = Validator.normalizeLocation(sc.nextLine());
             if (Validator.isValidLocation(location)) {
-                return location;
+                isLocationValid = true;
+            } else {
+                System.out.println("Enter a valid " + label.toLowerCase() + " (e.g. Manila).");
             }
-            System.out.println("Enter a valid " + label.toLowerCase() + " (e.g. Manila).");
         }
+        return location;
     }
 
     /** Each column fits its heading and the longest value in the displayed flights. */

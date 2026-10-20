@@ -19,7 +19,7 @@ import src.flight.Flight;
 import src.flight.ServiceClass;
 
 /**
- * Saves and loads bookings from BOOKINGS.txt (Singleton, like FlightStorage).
+ * Saves and loads bookings from BOOKED_FLIGHTS.txt (Singleton, like FlightStorage).
  * Also assigns seats automatically.
  */
 public final class BookingStorage {
@@ -33,10 +33,10 @@ public final class BookingStorage {
         if (Files.isDirectory(workspaceDirectory)) {
             directory = workspaceDirectory;
         }
-        filePath = directory.resolve("BOOKINGS.txt");
+        filePath = directory.resolve("BOOKED_FLIGHTS.txt");
     }
 
-    public static BookingStorage getInstance() {
+    public synchronized static BookingStorage getInstance() {
         if (instance == null) {
             instance = new BookingStorage();
         }
@@ -66,7 +66,7 @@ public final class BookingStorage {
                         ServiceClass.valueOf(fields[4]), seats,
                         new BigDecimal(fields[6]), BookingStatus.valueOf(fields[7])));
             } catch (IllegalArgumentException e) {
-                throw new IOException("Invalid booking data on line " + lineNumber + " of BOOKINGS.txt.", e);
+                throw new IOException("Invalid booking data on line " + lineNumber + " of BOOKED_FLIGHTS.txt.", e);
             }
         }
         return bookings;

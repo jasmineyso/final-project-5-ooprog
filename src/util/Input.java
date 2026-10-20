@@ -18,7 +18,9 @@ public final class Input {
 
     public static int askChoice(String title, String... options) {
         Scanner sc = getScanner();
-        while (true) {
+        boolean isChoiceValid = false;
+        int choice = 0;
+        while (!isChoiceValid) {
             System.out.println();
             System.out.println("=== " + title + " ===");
             for (int i = 0; i < options.length; i++) {
@@ -28,26 +30,33 @@ public final class Input {
             String input = sc.nextLine();
 
             if (Validator.isIntInRange(input, 1, options.length)) {
-                return Integer.parseInt(input.trim());
+                choice = Integer.parseInt(input.trim());
+                isChoiceValid = true;
+            } else {
+                System.out.println(ErrorMessages.INVALID_CHOICE);
             }
-            System.out.println(ErrorMessages.INVALID_CHOICE);
         }
+        return choice;
     }
 
     /** Asks a yes/no question until the user types Y or N. Returns true for Y. */
     public static boolean askYesNo(String question) {
         Scanner sc = getScanner();
-        while (true) {
+        boolean isAnswerValid = false;
+        boolean answer = false;
+        while (!isAnswerValid) {
             Display.prompt(question + " (Y/N)");
             String input = sc.nextLine().trim();
 
             if (input.equalsIgnoreCase("Y")) {
-                return true;
+                answer = true;
+                isAnswerValid = true;
+            } else if (input.equalsIgnoreCase("N")) {
+                isAnswerValid = true;
+            } else {
+                Display.error("Please enter Y or N.");
             }
-            if (input.equalsIgnoreCase("N")) {
-                return false;
-            }
-            Display.error("Please enter Y or N.");
         }
+        return answer;
     }
 }

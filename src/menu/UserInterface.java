@@ -66,7 +66,10 @@ public class UserInterface {
 
             switch (choice) {
                 case 1 -> RegularUserOperations.getInstance().viewFlights();
-                case 2, 3, 4, 5, 6 -> Display.message("Not available yet.");
+                case 2 -> RegularUserOperations.getInstance().viewBookedFlights(user);
+                case 3 -> RegularUserOperations.getInstance().bookFlight(user);
+                case 4 -> RegularUserOperations.getInstance().payBooking(user);
+                case 5, 6 -> Display.message("Not available yet.");
                 case 7 -> {
                     Display.message("Logging out...");
                     running = false;
