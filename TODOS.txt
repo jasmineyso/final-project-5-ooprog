@@ -1,0 +1,3 @@
+// CREATE VALIDATIONS
+// ADD DESIGN PATTERNS GoF (Group of Four)
+// add more TODOs
