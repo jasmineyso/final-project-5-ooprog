@@ -41,8 +41,19 @@ public class Menu {
                 case 1 -> login.loginAdmin();
                 case 2 -> regularUserPage();
                 case 3 -> {
+<<<<<<< HEAD
+                    System.out.print("Are you sure you want to exit? (y/n): ");
+                    String confirm = sc.nextLine().trim();
+                    if (confirm.equalsIgnoreCase("y")) {
+                        System.out.println("Thank you for using the ___ Airline. Goodbye!");
+                        running = false;
+                    } else {
+                        System.out.println("Exit cancelled.");
+                    }
+=======
                     System.out.println("Thank you for using the ___ Airline. Goodbye!");
                     running = false;
+>>>>>>> a93f2d912a7f82202bf7dc1d4266f061eb7a7641
                 }
             }
         }
@@ -60,7 +71,17 @@ public class Menu {
             switch (choice) {
                 case 1 -> signUp();
                 case 2 -> login.loginRegularUser();
+<<<<<<< HEAD
+                case 3 -> {
+                    System.out.print("Are you sure you want to go back? (y/n): ");
+                    String confirm = sc.nextLine().trim();
+                    if (confirm.equalsIgnoreCase("y")) {
+                        running = false;
+                    }
+                }
+=======
                 case 3 -> running = false;
+>>>>>>> a93f2d912a7f82202bf7dc1d4266f061eb7a7641
             }
         }
     }
