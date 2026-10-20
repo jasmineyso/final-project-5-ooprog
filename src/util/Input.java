@@ -33,4 +33,21 @@ public final class Input {
             System.out.println(ErrorMessages.INVALID_CHOICE);
         }
     }
+
+    /** Asks a yes/no question until the user types Y or N. Returns true for Y. */
+    public static boolean askYesNo(String question) {
+        Scanner sc = getScanner();
+        while (true) {
+            Display.prompt(question + " (Y/N)");
+            String input = sc.nextLine().trim();
+
+            if (input.equalsIgnoreCase("Y")) {
+                return true;
+            }
+            if (input.equalsIgnoreCase("N")) {
+                return false;
+            }
+            Display.error("Please enter Y or N.");
+        }
+    }
 }

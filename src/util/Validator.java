@@ -1,7 +1,9 @@
 package src.util;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
@@ -145,6 +147,60 @@ public final class Validator {
     /** Turns a LocalDateTime back into the same text format, for display or saving to files. */
     public static String formatDateTime(LocalDateTime dateTime) {
         return dateTime == null ? "" : dateTime.format(DATE_TIME_FORMAT);
+    }
+
+    // ===================== DATE ONLY =====================
+
+    /** Show this in prompts so users know the expected format. */
+    public static final String DATE_FORMAT_HINT = "YYYY-MM-DD (e.g. 2026-11-05)";
+
+    private static final DateTimeFormatter DATE_FORMAT =
+            DateTimeFormatter.ofPattern("uuuu-MM-dd").withResolverStyle(ResolverStyle.STRICT);
+
+    /**
+     * Converts text like "2026-11-05" into a LocalDate.
+     * Returns null if it is not a real date in that exact format.
+     * Rejects: "2026-02-30", "2026-11-5", "11/05/2026"
+     */
+    public static LocalDate parseDate(String input) {
+        if (input == null) {
+            return null;
+        }
+        try {
+            return LocalDate.parse(input.trim(), DATE_FORMAT);
+        } catch (DateTimeParseException e) {
+            return null;
+        }
+    }
+
+    public static boolean isValidDate(String input) {
+        return parseDate(input) != null;
+    }
+
+    // ===================== TIME ONLY =====================
+
+    // 24-hour clock. "H" allows one or two digits, so both 9:05 and 09:05 work.
+    private static final DateTimeFormatter TIME_FORMAT =
+            DateTimeFormatter.ofPattern("H:mm").withResolverStyle(ResolverStyle.STRICT);
+
+    /**
+     * Converts text like "14:30" or "9:05" into a LocalTime.
+     * Returns null if it is not a real 24-hour time.
+     * Rejects: "24:00", "14:60", "2:30 PM", "1430"
+     */
+    public static LocalTime parseTime(String input) {
+        if (input == null) {
+            return null;
+        }
+        try {
+            return LocalTime.parse(input.trim(), TIME_FORMAT);
+        } catch (DateTimeParseException e) {
+            return null;
+        }
+    }
+
+    public static boolean isValidTime(String input) {
+        return parseTime(input) != null;
     }
 
     // ===================== FLIGHT NUMBER =====================
