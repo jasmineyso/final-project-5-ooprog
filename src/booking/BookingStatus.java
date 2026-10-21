@@ -4,7 +4,11 @@ package src.booking;
 public enum BookingStatus {
     PENDING("Pending"),
     PAID("Paid / Booked"),
-    CANCELLED("Cancelled");
+    CANCELLED("Cancelled"),
+    COMPLETED("Completed");
+
+    /** Compatibility name used by the attached version of this enum. */
+    public static final BookingStatus CONFIRMED = PAID;
 
     private final String label;
 

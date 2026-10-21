@@ -2,6 +2,7 @@ package src.booking;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 
 import src.flight.ServiceClass;
 
@@ -17,7 +18,18 @@ public record Booking(String bookingId, String username, String passengerName, S
 
     /** Runs on every new Booking: makes the seat list read-only. */
     public Booking {
+        Objects.requireNonNull(bookingId, "bookingId");
+        Objects.requireNonNull(username, "username");
+        Objects.requireNonNull(passengerName, "passengerName");
+        Objects.requireNonNull(flightNumber, "flightNumber");
+        Objects.requireNonNull(serviceClass, "serviceClass");
+        Objects.requireNonNull(seats, "seats");
+        Objects.requireNonNull(totalPrice, "totalPrice");
+        Objects.requireNonNull(status, "status");
         seats = List.copyOf(seats);
+        if (seats.isEmpty()) {
+            throw new IllegalArgumentException("A booking must contain at least one seat.");
+        }
     }
 
     /** A copy of this booking with a different status. */
@@ -30,6 +42,11 @@ public record Booking(String bookingId, String username, String passengerName, S
     public Booking withServiceClass(ServiceClass newClass, List<String> newSeats, BigDecimal newTotal) {
         return new Booking(bookingId, username, passengerName, flightNumber,
                 newClass, newSeats, newTotal, status);
+    }
+
+    /** True while this booking can still reserve seats or be modified. */
+    public boolean isActive() {
+        return status != BookingStatus.CANCELLED && status != BookingStatus.COMPLETED;
     }
 
     @Override

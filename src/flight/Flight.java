@@ -75,6 +75,11 @@ public class Flight {
         return status;
     }
 
+    /** A flight can accept bookings unless it has been cancelled. */
+    public boolean isBookable() {
+        return status != FlightStatus.CANCELLED;
+    }
+
     public BigDecimal getEconomyFare() {
         return economyFare;
     }

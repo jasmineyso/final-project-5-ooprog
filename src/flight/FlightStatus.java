@@ -6,6 +6,9 @@ public enum FlightStatus {
     DELAYED("Delayed"),
     CANCELLED("Cancelled");
 
+    /** Compatibility name used by the attached version of this enum. */
+    public static final FlightStatus ON_TIME = SCHEDULED;
+
     private final String label;
 
     FlightStatus(String label) {
