@@ -68,7 +68,8 @@ public class UserInterface {
                 case 2 -> RegularUserOperations.getInstance().viewBookedFlights(user);
                 case 3 -> RegularUserOperations.getInstance().bookFlight(user);
                 case 4 -> RegularUserOperations.getInstance().payBooking(user);
-                case 5, 6 -> Display.message("Not available yet.");
+                case 5 -> RegularUserOperations.getInstance().updateBookedFlight(user);
+                case 6 -> RegularUserOperations.getInstance().cancelBookedFlight(user);
                 case 7 -> {
                     System.out.print("Are you sure you want to log out? (y/n): ");
                     String confirm = sc.nextLine().trim();
