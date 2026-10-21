@@ -9,6 +9,7 @@ import src.account.AccountStorage;
 import src.account.RegularUser;
 import src.booking.BookingStorage;
 import src.util.Display;
+import src.util.InformationTables;
 import src.util.Input;
 
 /**
@@ -89,7 +90,7 @@ public class AdminAccountMenu {
                 return;
             }
 
-            Display.message(describe(user));
+            InformationTables.users(List.of(user));
             Display.message("Any active bookings of this user will be cancelled.");
             if (!Input.askYesNo("Are you sure you want to delete this account?")) {
                 Display.message("Delete cancelled.");
@@ -113,15 +114,8 @@ public class AdminAccountMenu {
             return;
         }
         users.sort(Comparator.comparing(user -> user.getUsername().toLowerCase()));
-        for (RegularUser user : users) {
-            Display.message(describe(user));
-        }
+        InformationTables.users(users);
         Display.message(users.size() + " user(s)");
     }
 
-    /** One line about a user. Passwords are never shown. */
-    private String describe(RegularUser user) {
-        return user.getUsername() + " | " + user.getEmail()
-                + " | " + user.getPhoneNumber() + " | " + user.getAddress();
-    }
 }

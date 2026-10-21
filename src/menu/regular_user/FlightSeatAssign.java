@@ -13,7 +13,7 @@ import src.flight.Flight;
 import src.flight.FlightStatus;
 import src.flight.ServiceClass;
 
-/** Assigns available seats and saves the booking to BOOKED_FLIGHTS.txt. */
+/** Assigns available seats and prepares a booking for the payment choice. */
 public class FlightSeatAssign {
     private final Flight flight;
     private final ServiceClass serviceClass;
@@ -28,23 +28,23 @@ public class FlightSeatAssign {
         this.numberOfSeats = numberOfSeats;
     }
 
-    public Booking bookFor(RegularUser user) throws IOException, NotEnoughSeatsException {
-        if (flight.status() == FlightStatus.CANCELLED) {
+    public Booking prepareBookingFor(RegularUser user) throws IOException, NotEnoughSeatsException {
+        if (flight.getStatus() == FlightStatus.CANCELLED) {
             throw new IOException("This flight is cancelled.");
         }
 
         BookingStorage storage = BookingStorage.getInstance();
-        synchronized (storage) {
-            // Existing Pending and Paid bookings occupy seats; cancelled bookings do not.
-            List<String> seats = storage.assignSeats(flight, serviceClass, numberOfSeats);
-            BigDecimal totalPrice = flight.fareFor(serviceClass)
-                    .multiply(BigDecimal.valueOf(numberOfSeats));
-            // Accounts have no separate passenger name, so use the account username.
-            Booking booking = new Booking(storage.nextBookingId(), user.getUsername(),
-                    user.getUsername(), flight.flightNumber(), serviceClass, seats,
+            
+        List<String> seats = storage.assignSeats(flight, serviceClass, numberOfSeats);
+            
+        BigDecimal totalPrice = flight.getFareFor(serviceClass).multiply(BigDecimal.valueOf(numberOfSeats));
+            
+        // Accounts have no separate passenger name, so use the account username.
+            
+        Booking booking = new Booking(storage.nextBookingId(), user.getUsername(),
+                    user.getUsername(), flight.getFlightNumber(), serviceClass, seats,
                     totalPrice, BookingStatus.PENDING);
-            storage.saveBooking(booking);
-            return booking;
-        }
+            
+        return booking;
     }
 }

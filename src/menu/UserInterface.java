@@ -1,7 +1,5 @@
 package src.menu;
 
-import java.util.Scanner;
-
 import src.account.RegularUser;
 import src.menu.admin.AdminAccountMenu;
 import src.menu.admin.AdminBookingMenu;
@@ -10,13 +8,15 @@ import src.menu.regular_user.RegularUserOperations;
 import src.util.Display;
 import src.util.Input;
 
+import java.util.Scanner;
+
 public class UserInterface {
     private static UserInterface instance;
     private final Scanner sc = Input.getScanner();
-
     private UserInterface() {}
+    
 
-    public static UserInterface getInstance() {
+    public synchronized static UserInterface getInstance() {
         if (instance == null) {
             instance = new UserInterface();
         }

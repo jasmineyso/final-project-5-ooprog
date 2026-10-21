@@ -12,6 +12,6 @@ public class ByOrigin implements FlightFilter {
 
     @Override
     public boolean matches(Flight flight) {
-        return flight.origin().equalsIgnoreCase(origin);
+        return flight.getOrigin().equalsIgnoreCase(origin);
     }
 }

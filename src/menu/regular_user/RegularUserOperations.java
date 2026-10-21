@@ -2,7 +2,11 @@ package src.menu.regular_user;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 import src.account.RegularUser;
@@ -12,19 +16,25 @@ import src.booking.BookingStorage;
 import src.booking.exception.NotEnoughSeatsException;
 import src.core.ErrorMessages;
 import src.flight.Flight;
+import src.flight.FlightStatus;
 import src.flight.FlightStorage;
 import src.flight.ServiceClass;
 import src.util.Input;
+import src.util.Display;
+import src.util.InformationTables;
+import src.util.Validator;
 
 public class RegularUserOperations {
 
     private static RegularUserOperations instance;
     private final Scanner sc = Input.getScanner();
 
+    private final BookingStorage bookingStorage = BookingStorage.getInstance();
+
     private RegularUserOperations() {
     }
 
-    public static RegularUserOperations getInstance() {
+    public synchronized static RegularUserOperations getInstance() {
         if (instance == null) {
             instance = new RegularUserOperations();
         }
@@ -49,6 +59,7 @@ public class RegularUserOperations {
         while (!isValid) {
             System.out.println("1. View All Flights");
             System.out.println("2. Search by Origin and Destination");
+            System.out.println("3. Search Service Class Remaining Seat");
 
             System.out.print("Enter your choice: ");
             String userChoice = sc.nextLine().trim();
@@ -60,6 +71,10 @@ public class RegularUserOperations {
                 }
                 case "2" -> {
                     viewFlights.searchByOriginAndDestination();
+                    return;
+                }
+                case "3" -> {
+                    viewFlights.searchByServiceClassRemainingSeats();
                     return;
                 }
                 default -> System.out.println(ErrorMessages.INVALID_CHOICE);
@@ -75,21 +90,69 @@ public class RegularUserOperations {
                 System.out.println("You have no bookings yet.");
                 return;
             }
-            int bookingNumber = 1;
+            Map<String, Flight> flights = new LinkedHashMap<>();
+            try {
+                for (Flight flight : FlightStorage.getInstance().loadFlights()) {
+                    flights.put(Validator.normalizeFlightNumber(flight.getFlightNumber()), flight);
+                }
+            } catch (IOException e) {
+                System.out.println("Flight details could not be loaded: " + e.getMessage());
+            }
+            Map<String, List<Booking>> groups = new LinkedHashMap<>();
+            groups.put("Upcoming Trips", new ArrayList<>());
+            groups.put("Past / Departed Trips", new ArrayList<>());
+            groups.put("Cancelled Trips", new ArrayList<>());
+            groups.put("Flight Details Unavailable", new ArrayList<>());
+            LocalDateTime now = LocalDateTime.now();
             for (Booking booking : bookings) {
-                System.out.println();
-                System.out.println("#" + bookingNumber++);
-                System.out.printf("%-13s: %s%n", "BOOKID", booking.bookingId());
-                System.out.printf("%-13s: %s%n", "NAME", booking.passengerName());
-                System.out.printf("%-13s: %s%n", "FLIGHT", booking.flightNumber());
-                System.out.printf("%-13s: %s%n", "SERVICE CLASS", booking.serviceClass());
-                System.out.printf("%-13s: %s%n", "SEATS", String.join(", ", booking.seats()));
-                System.out.printf("%-13s: PHP %,.2f%n", "FEE", booking.totalPrice());
-                System.out.printf("%-13s: %s%n", "STATUS", booking.status());
+                Flight flight = flights.get(Validator.normalizeFlightNumber(booking.flightNumber()));
+                String group;
+                if (booking.status() == BookingStatus.CANCELLED
+                        || (flight != null && flight.getStatus() == FlightStatus.CANCELLED)) {
+                    group = "Cancelled Trips";
+                } else if (flight == null) {
+                    group = "Flight Details Unavailable";
+                } else if (flight.getDepartureTime().isAfter(now)) {
+                    group = "Upcoming Trips";
+                } else {
+                    group = "Past / Departed Trips";
+                }
+                groups.get(group).add(booking);
+            }
+            for (Map.Entry<String, List<Booking>> group : groups.entrySet()) {
+                if (group.getValue().isEmpty()) {
+                    continue;
+                }
+                System.out.println("\n=== " + group.getKey() + " ===");
+                for (Booking booking : group.getValue()) {
+                    displayBooking(booking, flights.get(Validator.normalizeFlightNumber(booking.flightNumber())));
+                }
             }
         } catch (IOException e) {
             System.out.println("Could not load your bookings: " + e.getMessage());
         }
+    }
+
+    private void displayBooking(Booking booking, Flight flight) {
+        List<String[]> rows = new ArrayList<>();
+        rows.add(new String[] { "Booking ID", booking.bookingId() });
+        rows.add(new String[] { "Passenger", booking.passengerName() });
+        rows.add(new String[] { "Flight Number", booking.flightNumber() });
+        if (flight == null) {
+            System.out.println("Flight details unavailable; the flight may have been removed.");
+        } else {
+            rows.add(new String[] { "Origin", flight.getOrigin() });
+            rows.add(new String[] { "Destination", flight.getDestination() });
+            rows.add(new String[] { "Departure", Validator.formatDateTime(flight.getDepartureTime()) });
+            rows.add(new String[] { "Arrival", Validator.formatDateTime(flight.getArrivalTime()) });
+            rows.add(new String[] { "Gate", flight.getGateNumber() });
+        }
+        rows.add(new String[] { "Flight Status", flight == null ? "Unavailable" : flight.getStatus().toString() });
+        rows.add(new String[] { "Service Class", booking.serviceClass().toString() });
+        rows.add(new String[] { "Seats", String.join(", ", booking.seats()) });
+        rows.add(new String[] { "Fee", InformationTables.money(booking.totalPrice()) });
+        rows.add(new String[] { "Booking Status", booking.status().toString() });
+        Display.table(new String[] { "Detail", "Information" }, rows.toArray(new String[0][]));
     }
 
     public void bookFlight(RegularUser user) {
@@ -130,11 +193,28 @@ public class RegularUserOperations {
         ServiceClass selectedServiceClass = null;
 
         while (!isServiceClassValid) {
-            System.out.println("=== Service Classes for " + selectedFlight.flightNumber() + " ===");
-            System.out.printf("1. Economy - %,.2f%n", selectedFlight.fareFor(ServiceClass.ECONOMY));
-            System.out.printf("2. Premium Economy - %,.2f%n", selectedFlight.fareFor(ServiceClass.PREMIUM_ECONOMY));
-            System.out.printf("3. Business Class - %,.2f%n", selectedFlight.fareFor(ServiceClass.BUSINESS));
-            System.out.printf("4. First Class - %,.2f%n", selectedFlight.fareFor(ServiceClass.FIRST_CLASS));
+            System.out.println("=== Service Classes for " + selectedFlight.getFlightNumber() + " ===");
+            boolean hasAvailableSeats = false;
+            try {
+                List<String[]> serviceRows = new ArrayList<>();
+                for (ServiceClass serviceClass : ServiceClass.values()) {
+                    int remaining = bookingStorage.availableSeats(selectedFlight, serviceClass).size();
+                    hasAvailableSeats |= remaining > 0;
+                    serviceRows.add(new String[] { Integer.toString(serviceClass.ordinal() + 1),
+                            serviceClass.toString(), InformationTables.money(selectedFlight.getFareFor(serviceClass)),
+                            Integer.toString(remaining), Integer.toString(selectedFlight.getSeatCount(serviceClass)),
+                            remaining == 0 ? "Sold Out" : "Available" });
+                }
+                Display.table(new String[] { "Choice", "Service Class", "Fare", "Remaining Seats", "Capacity", "Availability" },
+                        serviceRows.toArray(new String[0][]));
+            } catch (IOException e) {
+                System.out.println("Could not load seat availability: " + e.getMessage());
+                return;
+            }
+            if (!hasAvailableSeats) {
+                System.out.println("This flight is sold out. Please choose another flight.");
+                return;
+            }
             System.out.print("Enter your service class choice (1-4): ");
 
             selectedServiceClass = switch (sc.nextLine().trim()) {
@@ -148,55 +228,82 @@ public class RegularUserOperations {
             if (selectedServiceClass == null) {
                 System.out.println(ErrorMessages.INVALID_CHOICE);
             } else {
-                isServiceClassValid = true;
+                try {
+                    boolean isSoldOut = bookingStorage.availableSeats(selectedFlight, selectedServiceClass).isEmpty();
+                    if (isSoldOut) {
+                        System.out.println("This service class is sold out. Please choose another service class.");
+                    } else {
+                        isServiceClassValid = true;
+                    }
+                } catch (IOException e) {
+                    System.out.println("Could not load seat availability: " + e.getMessage());
+                    return;
+                }
             }
         }
 
-        System.out.printf("Selected: %s | %s | Fare: %,.2f%n",
-                selectedFlight.flightNumber(), selectedServiceClass,
-                selectedFlight.fareFor(selectedServiceClass));
+        Display.table(new String[] { "Flight Number", "Service Class", "Fare" }, new String[][] {
+                { selectedFlight.getFlightNumber(), selectedServiceClass.toString(),
+                        InformationTables.money(selectedFlight.getFareFor(selectedServiceClass)) }
+        });
 
         boolean isNumberOfSeatsValid = false;
         int numberOfSeats = 0;
 
         while (!isNumberOfSeatsValid) {
+            int availableSeats;
             try {
-                int availableSeats = BookingStorage.getInstance()
-                        .availableSeats(selectedFlight, selectedServiceClass).size();
-                System.out.printf("Available seats in %s on flight %s: %d%n",
-                        selectedServiceClass, selectedFlight.flightNumber(), availableSeats);
+                availableSeats = bookingStorage.availableSeats(selectedFlight, selectedServiceClass).size();
             } catch (IOException e) {
                 System.out.println("Could not load seat availability: " + e.getMessage());
                 return;
             }
-            System.out.print("Enter Number of Seats(1-9): ");
+
+            if (availableSeats == 0) {
+                System.out.println("This service class is sold out. Please start again and choose another service class.");
+                return;
+            }
+            System.out.printf("Enter Number of Seats(1-%d): ", Math.min(9, availableSeats));
             String numOfSeats = sc.nextLine().trim();
 
-            if (numOfSeats.matches("[1-9]")) {
-                numberOfSeats = Integer.parseInt(numOfSeats);
-                isNumberOfSeatsValid = true;
-            } else {
+            if (!numOfSeats.matches("[1-9]")) {
                 System.out.println(ErrorMessages.INVALID_NUMBER_OF_SEATS);
+                continue;
             }
+
+            numberOfSeats = Integer.parseInt(numOfSeats);
+            if (numberOfSeats > availableSeats) {
+                System.out.printf("Only %d seat(s) remain in %s. Please enter a smaller number.%n",
+                        availableSeats, selectedServiceClass);
+                continue;
+            }
+
+            isNumberOfSeatsValid = true;
         }
 
-        
         try {
             // Auto assigns the seat
-            FlightSeatAssign seatAssignment = new FlightSeatAssign(
-                    selectedFlight, selectedServiceClass, numberOfSeats);
-            Booking booking = seatAssignment.bookFor(user);
-            System.out.println("Booking saved: " + booking.bookingId());
+            FlightSeatAssign seatAssignment = new FlightSeatAssign(selectedFlight, selectedServiceClass, numberOfSeats);
+            Booking booking = seatAssignment.prepareBookingFor(user);
             System.out.println("Assigned seats: " + String.join(", ", booking.seats()));
-            System.out.printf("Total price: %,.2f | Status: %s%n",
-                    booking.totalPrice(), booking.status());
+            System.out.printf("Total price: PHP %,.2f%n", booking.totalPrice());
 
-            //Payment for the booking (PAID OR PENDING)
+            // Save only after the payment choice and, for Pay now, successful payment.
             int paymentChoice = Input.askChoice("Payment", "Pay now", "Pay later");
             if (paymentChoice == 1) {
-                processPayment(user, booking);
+                BigDecimal amountPaid = collectPayment(booking);
+                if (amountPaid == null) {
+                    System.out.println("Booking was not saved. No seats were reserved.");
+                    return;
+                }
+                booking = booking.withStatus(BookingStatus.PAID);
+                bookingStorage.saveBooking(booking);
+                System.out.println("Booking saved: " + booking.bookingId());
+                displayPaymentReceipt(booking, amountPaid);
             } else {
-                System.out.println("Booking remains Pending. You can pay later using Pay for Booked Flight.");
+                bookingStorage.saveBooking(booking);
+                System.out.println("Booking saved: " + booking.bookingId() + " | Status: " + booking.status());
+                System.out.println("You can pay later using Pay for Booked Flight.");
             }
         } catch (NotEnoughSeatsException e) {
             System.out.println(e.getMessage());
@@ -210,19 +317,18 @@ public class RegularUserOperations {
         BookingStorage storage = BookingStorage.getInstance();
         try {
             List<Booking> bookings = storage.bookingsOf(user.getUsername());
-            boolean hasPendingBooking = false;
+            List<Booking> pendingBookings = new ArrayList<>();
             for (Booking booking : bookings) {
                 if (booking.status() == BookingStatus.PENDING) {
-                    System.out.printf("%s | Flight %s | %s | PHP %,.2f%n",
-                            booking.bookingId(), booking.flightNumber(),
-                            booking.serviceClass(), booking.totalPrice());
-                    hasPendingBooking = true;
+                    pendingBookings.add(booking);
                 }
             }
-            if (!hasPendingBooking) {
+            if (pendingBookings.isEmpty()) {
                 System.out.println("You have no unpaid bookings.");
                 return;
             }
+
+            InformationTables.bookings(pendingBookings);
 
             Booking selectedBooking = null;
             boolean isBookingValid = false;
@@ -250,7 +356,7 @@ public class RegularUserOperations {
         }
     }
 
-    /** Shared payment flow for a newly created booking or a Pending booking selected later. */
+    /** Pays an existing Pending booking selected using Pay for Booked Flight. */
     private void processPayment(RegularUser user, Booking booking) {
         BookingStorage storage = BookingStorage.getInstance();
         try {
@@ -265,29 +371,8 @@ public class RegularUserOperations {
                 return;
             }
 
-            System.out.printf("Amount due: PHP %,.2f%n", selectedBooking.totalPrice());
-            BigDecimal amountPaid = BigDecimal.ZERO;
-            boolean isPaymentValid = false;
-            while (!isPaymentValid) {
-                System.out.print("Enter cash amount in PHP (0 to cancel): ");
-                String paymentInput = sc.nextLine().trim();
-                if (!paymentInput.matches("[0-9]+(?:\\.[0-9]{1,2})?")) {
-                    System.out.println(ErrorMessages.INVALID_PAYMENT_AMOUNT);
-                    continue;
-                }
-                amountPaid = new BigDecimal(paymentInput);
-                if (amountPaid.signum() == 0) {
-                    System.out.println("Payment cancelled. Booking remains Pending.");
-                    return;
-                }
-                if (amountPaid.compareTo(selectedBooking.totalPrice()) < 0) {
-                    System.out.println(ErrorMessages.INSUFFICIENT_PAYMENT);
-                    continue;
-                }
-                isPaymentValid = true;
-            }
-
-            if (!Input.askYesNo("Confirm payment for " + selectedBooking.bookingId() + "?")) {
+            BigDecimal amountPaid = collectPayment(selectedBooking);
+            if (amountPaid == null) {
                 System.out.println("Payment cancelled. Booking remains Pending.");
                 return;
             }
@@ -296,16 +381,46 @@ public class RegularUserOperations {
                 return;
             }
 
-            System.out.println("Payment successful.");
-            System.out.printf("%-13s: %s%n", "BOOKID", selectedBooking.bookingId());
-            System.out.printf("%-13s: PHP %,.2f%n", "FEE", selectedBooking.totalPrice());
-            System.out.printf("%-13s: PHP %,.2f%n", "CASH", amountPaid);
-            System.out.printf("%-13s: PHP %,.2f%n", "CHANGE",
-                    amountPaid.subtract(selectedBooking.totalPrice()));
-            System.out.printf("%-13s: %s%n", "STATUS", BookingStatus.PAID);
+            displayPaymentReceipt(selectedBooking.withStatus(BookingStatus.PAID), amountPaid);
         } catch (IOException e) {
             System.out.println(ErrorMessages.PAYMENT_FAILED + e.getMessage());
         }
+    }
+
+    /** Collects and confirms payment without saving. A null result means payment was cancelled. */
+    private BigDecimal collectPayment(Booking booking) {
+        System.out.printf("Amount due: PHP %,.2f%n", booking.totalPrice());
+        while (true) {
+            System.out.print("Enter cash amount in PHP (0 to cancel): ");
+            String paymentInput = sc.nextLine().trim();
+            if (!paymentInput.matches("[0-9]+(?:\\.[0-9]{1,2})?")) {
+                System.out.println(ErrorMessages.INVALID_PAYMENT_AMOUNT);
+                continue;
+            }
+            BigDecimal amountPaid = new BigDecimal(paymentInput);
+            if (amountPaid.signum() == 0) {
+                return null;
+            }
+            if (amountPaid.compareTo(booking.totalPrice()) < 0) {
+                System.out.println(ErrorMessages.INSUFFICIENT_PAYMENT);
+                continue;
+            }
+            if (!Input.askYesNo("Confirm payment for " + booking.bookingId() + "?")) {
+                return null;
+            }
+            return amountPaid;
+        }
+    }
+
+    private void displayPaymentReceipt(Booking booking, BigDecimal amountPaid) {
+        System.out.println("Payment successful.");
+        Display.table(new String[] { "Detail", "Information" }, new String[][] {
+                { "Booking ID", booking.bookingId() },
+                { "Fee", InformationTables.money(booking.totalPrice()) },
+                { "Cash", InformationTables.money(amountPaid) },
+                { "Change", InformationTables.money(amountPaid.subtract(booking.totalPrice())) },
+                { "Status", booking.status().toString() }
+        });
     }
 
 }

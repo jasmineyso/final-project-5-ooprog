@@ -23,8 +23,14 @@ public class AccountStorage {
     }
 
     private AccountStorage() {
-        this.filePath = Path.of("src", "files", "USER_ACCOUNTS.txt");
-        this.adminFilePath = Path.of("src", "files", "ADMIN_ACCOUNTS.txt");
+        // Support launching from either the project or its parent workspace.
+        Path directory = Path.of("src", "files");
+        Path workspaceDirectory = Path.of("final-project-5-ooprog", "src", "files");
+        if (Files.isDirectory(workspaceDirectory)) {
+            directory = workspaceDirectory;
+        }
+        this.filePath = directory.resolve("USER_ACCOUNTS.txt");
+        this.adminFilePath = directory.resolve("ADMIN_ACCOUNTS.txt");
     }
 
     public void saveUser(RegularUser user) throws IOException {
@@ -49,7 +55,10 @@ public class AccountStorage {
                 StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
     }
 
-    /** Returns the user with exactly this username (ignores capital letters), or null. */
+    /**
+     * Returns the user with exactly this username (ignores capital letters), or
+     * null.
+     */
     public RegularUser findUser(String username) throws IOException {
         for (RegularUser user : loadUsers()) {
             if (user.getUsername().equalsIgnoreCase(username.trim())) {
@@ -59,7 +68,9 @@ public class AccountStorage {
         return null;
     }
 
-    /** Deletes the user with this username. Returns false if no such user exists. */
+    /**
+     * Deletes the user with this username. Returns false if no such user exists.
+     */
     public boolean deleteUser(String username) throws IOException {
         List<RegularUser> users = loadUsers();
         boolean removed = users.removeIf(user -> user.getUsername().equalsIgnoreCase(username.trim()));

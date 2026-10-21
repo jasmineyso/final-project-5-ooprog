@@ -12,6 +12,10 @@ public class RegularUser extends User {
         this.address = address;
     }
 
+    public RegularUser(String username, String password){
+        super(username, password);
+    }
+
     public String getEmail() {
         return email;
     }
@@ -22,5 +26,10 @@ public class RegularUser extends User {
 
     public String getAddress() {
         return address;
+    }
+
+    @Override
+    public String getRole(){
+        return "Regular User";
     }
 }

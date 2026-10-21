@@ -13,6 +13,6 @@ public class ByMonthYear implements FlightFilter {
 
     @Override
     public boolean matches(Flight flight) {
-        return YearMonth.from(flight.departureTime()).equals(monthYear);
+        return YearMonth.from(flight.getDepartureTime()).equals(monthYear);
     }
 }

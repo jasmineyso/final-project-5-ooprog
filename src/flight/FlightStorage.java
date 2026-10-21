@@ -9,9 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
 
 import src.flight.filter.FlightFilter;
 import src.util.Validator;
@@ -70,16 +68,13 @@ public final class FlightStorage {
      * economyFare|premiumFare|businessFare|firstFare|economySeats|premiumSeats|businessSeats|firstSeats
      */
     private Flight fromLine(String[] fields) {
-        Map<ServiceClass, BigDecimal> fares = new EnumMap<>(ServiceClass.class);
-        Map<ServiceClass, Integer> seats = new EnumMap<>(ServiceClass.class);
-        ServiceClass[] classes = ServiceClass.values();
-        for (int i = 0; i < classes.length; i++) {
-            fares.put(classes[i], new BigDecimal(fields[7 + i]));
-            seats.put(classes[i], Integer.parseInt(fields[11 + i]));
-        }
         return new Flight(fields[0], fields[1], fields[2], fields[3],
                 parseDateTime(fields[4]), parseDateTime(fields[5]),
-                FlightStatus.valueOf(fields[6]), fares, seats);
+                FlightStatus.valueOf(fields[6]),
+                new BigDecimal(fields[7]), new BigDecimal(fields[8]),
+                new BigDecimal(fields[9]), new BigDecimal(fields[10]),
+                Integer.parseInt(fields[11]), Integer.parseInt(fields[12]),
+                Integer.parseInt(fields[13]), Integer.parseInt(fields[14]));
     }
 
     /**
@@ -90,20 +85,12 @@ public final class FlightStorage {
      */
     private Flight fromOldLine(String[] fields) {
         BigDecimal economyFare = new BigDecimal(fields[6]);
-        Map<ServiceClass, BigDecimal> fares = new EnumMap<>(ServiceClass.class);
-        fares.put(ServiceClass.ECONOMY, economyFare);
-        fares.put(ServiceClass.PREMIUM_ECONOMY, economyFare);
-        fares.put(ServiceClass.BUSINESS, new BigDecimal(fields[7]));
-        fares.put(ServiceClass.FIRST_CLASS, new BigDecimal(fields[8]));
-
-        Map<ServiceClass, Integer> seats = new EnumMap<>(ServiceClass.class);
-        for (ServiceClass serviceClass : ServiceClass.values()) {
-            seats.put(serviceClass, serviceClass.seatsPerFlight());
-        }
-
         return new Flight(fields[0], fields[1], fields[2], fields[3],
                 parseDateTime(fields[4]), parseDateTime(fields[5]),
-                FlightStatus.SCHEDULED, fares, seats);
+                FlightStatus.SCHEDULED,
+                economyFare, economyFare, new BigDecimal(fields[7]), new BigDecimal(fields[8]),
+                ServiceClass.ECONOMY.seatsPerFlight(), ServiceClass.PREMIUM_ECONOMY.seatsPerFlight(),
+                ServiceClass.BUSINESS.seatsPerFlight(), ServiceClass.FIRST_CLASS.seatsPerFlight());
     }
 
     private LocalDateTime parseDateTime(String text) {
@@ -131,7 +118,7 @@ public final class FlightStorage {
     public Flight findFlight(String flightNumber) throws IOException {
         String target = Validator.normalizeFlightNumber(flightNumber);
         for (Flight flight : loadFlights()) {
-            if (Validator.normalizeFlightNumber(flight.flightNumber()).equals(target)) {
+            if (Validator.normalizeFlightNumber(flight.getFlightNumber()).equals(target)) {
                 return flight;
             }
         }
@@ -151,7 +138,7 @@ public final class FlightStorage {
 
     /** Adds ONE flight to the end of the file. */
     public void saveFlight(Flight flight) throws IOException {
-        if (Validator.flightNumberExists(flight.flightNumber(), loadFlightNumbers())) {
+        if (Validator.flightNumberExists(flight.getFlightNumber(), loadFlightNumbers())) {
             throw new IOException("Flight number already exists.");
         }
         String line = toLine(flight);
@@ -179,10 +166,10 @@ public final class FlightStorage {
      * Returns false if no flight has that number.
      */
     public boolean updateFlight(Flight updated) throws IOException {
-        String target = Validator.normalizeFlightNumber(updated.flightNumber());
+        String target = Validator.normalizeFlightNumber(updated.getFlightNumber());
         List<Flight> flights = loadFlights();
         for (int i = 0; i < flights.size(); i++) {
-            if (Validator.normalizeFlightNumber(flights.get(i).flightNumber()).equals(target)) {
+            if (Validator.normalizeFlightNumber(flights.get(i).getFlightNumber()).equals(target)) {
                 flights.set(i, updated);
                 saveAllFlights(flights);
                 return true;
@@ -196,7 +183,7 @@ public final class FlightStorage {
         String target = Validator.normalizeFlightNumber(flightNumber);
         List<Flight> flights = loadFlights();
         boolean removed = flights.removeIf(
-                flight -> Validator.normalizeFlightNumber(flight.flightNumber()).equals(target));
+                flight -> Validator.normalizeFlightNumber(flight.getFlightNumber()).equals(target));
         if (removed) {
             saveAllFlights(flights);
         }
@@ -209,15 +196,15 @@ public final class FlightStorage {
      */
     private String toLine(Flight flight) throws IOException {
         List<String> fields = new ArrayList<>(List.of(
-                flight.flightNumber(), flight.gateNumber(), flight.origin(), flight.destination(),
-                Validator.formatDateTime(flight.departureTime()),
-                Validator.formatDateTime(flight.arrivalTime()),
-                flight.status().name()));
+                flight.getFlightNumber(), flight.getGateNumber(), flight.getOrigin(), flight.getDestination(),
+                Validator.formatDateTime(flight.getDepartureTime()),
+                Validator.formatDateTime(flight.getArrivalTime()),
+                flight.getStatus().name()));
         for (ServiceClass serviceClass : ServiceClass.values()) {
-            fields.add(flight.fareFor(serviceClass).toPlainString());
+            fields.add(flight.getFareFor(serviceClass).toPlainString());
         }
         for (ServiceClass serviceClass : ServiceClass.values()) {
-            fields.add(Integer.toString(flight.seatCount(serviceClass)));
+            fields.add(Integer.toString(flight.getSeatCount(serviceClass)));
         }
         for (String field : fields) {
             if (field.contains("|") || field.contains("\n") || field.contains("\r")) {
