@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import src.booking.BookingStorage;
 import src.flight.filter.FlightFilter;
 import src.util.Validator;
 
@@ -70,7 +71,7 @@ public final class FlightStorage {
     private Flight fromLine(String[] fields) {
         return new Flight(fields[0], fields[1], fields[2], fields[3],
                 parseDateTime(fields[4]), parseDateTime(fields[5]),
-                FlightStatus.valueOf(fields[6]),
+                parseStatus(fields[6]),
                 new BigDecimal(fields[7]), new BigDecimal(fields[8]),
                 new BigDecimal(fields[9]), new BigDecimal(fields[10]),
                 Integer.parseInt(fields[11]), Integer.parseInt(fields[12]),
@@ -99,6 +100,14 @@ public final class FlightStorage {
             throw new IllegalArgumentException("Invalid date and time: " + text);
         }
         return dateTime;
+    }
+
+    private FlightStatus parseStatus(String text) {
+        // Older versions called a scheduled flight ON_TIME.
+        if ("ON_TIME".equalsIgnoreCase(text)) {
+            return FlightStatus.SCHEDULED;
+        }
+        return FlightStatus.valueOf(text);
     }
 
     public List<String> loadFlightNumbers() throws IOException {
@@ -166,6 +175,9 @@ public final class FlightStorage {
      * Returns false if no flight has that number.
      */
     public boolean updateFlight(Flight updated) throws IOException {
+        if (updated == null) {
+            throw new IllegalArgumentException("Updated flight cannot be null.");
+        }
         String target = Validator.normalizeFlightNumber(updated.getFlightNumber());
         List<Flight> flights = loadFlights();
         for (int i = 0; i < flights.size(); i++) {
@@ -176,6 +188,69 @@ public final class FlightStorage {
             }
         }
         return false;
+    }
+
+    /** Updates a flight's departure and arrival times. */
+    public boolean updateFlightSchedule(String flightNumber, LocalDateTime newDeparture,
+            LocalDateTime newArrival) throws IOException {
+        if (newDeparture == null || newArrival == null || !newArrival.isAfter(newDeparture)) {
+            throw new IllegalArgumentException("Arrival must be after departure.");
+        }
+        Flight current = findFlight(flightNumber);
+        if (current == null) {
+            return false;
+        }
+        return updateFlight(current.withTimes(newDeparture, newArrival));
+    }
+
+    /** Updates the fare for one service class. */
+    public boolean updateFlightFare(String flightNumber, ServiceClass serviceClass,
+            BigDecimal newFare) throws IOException {
+        if (serviceClass == null || newFare == null || newFare.signum() < 0) {
+            throw new IllegalArgumentException("Service class is required and fare cannot be negative.");
+        }
+        Flight current = findFlight(flightNumber);
+        if (current == null) {
+            return false;
+        }
+        BigDecimal economy = current.getEconomyFare();
+        BigDecimal premium = current.getPremiumEconomyFare();
+        BigDecimal business = current.getBusinessFare();
+        BigDecimal first = current.getFirstClassFare();
+        switch (serviceClass) {
+            case ECONOMY -> economy = newFare;
+            case PREMIUM_ECONOMY -> premium = newFare;
+            case BUSINESS -> business = newFare;
+            case FIRST_CLASS -> first = newFare;
+        }
+        return updateFlight(current.withFares(economy, premium, business, first));
+    }
+
+    /** Updates a flight's status. */
+    public boolean updateFlightStatus(String flightNumber, FlightStatus newStatus) throws IOException {
+        if (newStatus == null) {
+            throw new IllegalArgumentException("Flight status cannot be null.");
+        }
+        Flight current = findFlight(flightNumber);
+        if (current == null) {
+            return false;
+        }
+        return updateFlight(current.withStatus(newStatus));
+    }
+
+    /** Deletes a flight only when it has no active bookings. */
+    public boolean deleteFlight(String flightNumber, BookingStorage bookings) throws IOException {
+        if (bookings == null) {
+            throw new IllegalArgumentException("Booking storage cannot be null.");
+        }
+        Flight current = findFlight(flightNumber);
+        if (current == null) {
+            return false;
+        }
+        if (bookings.hasActiveBookingsOnFlight(current.getFlightNumber())) {
+            throw new IllegalStateException("Cannot delete a flight with active bookings.");
+        }
+        return removeFlight(current.getFlightNumber());
     }
 
     /** Removes the flight with this number. Returns false if it wasn't found. */

@@ -13,6 +13,7 @@ import java.util.function.Predicate;
 
 import src.booking.exception.NotEnoughSeatsException;
 import src.flight.Flight;
+import src.flight.FlightStorage;
 import src.flight.ServiceClass;
 
 public class BookingStorage {
@@ -79,7 +80,7 @@ public class BookingStorage {
                             ServiceClass.valueOf(fields[4]),
                             seats,
                             new BigDecimal(fields[6]),
-                            BookingStatus.valueOf(fields[7])
+                            parseStatus(fields[7])
                     );
 
                     bookings.add(booking);
@@ -92,6 +93,14 @@ public class BookingStorage {
         }
 
         return bookings;
+    }
+
+    private BookingStatus parseStatus(String text) {
+        // Older versions used CONFIRMED for bookings that have been paid.
+        if ("CONFIRMED".equalsIgnoreCase(text)) {
+            return BookingStatus.PAID;
+        }
+        return BookingStatus.valueOf(text);
     }
 
     // Find a booking using its booking ID
@@ -148,6 +157,9 @@ public class BookingStorage {
 
     // Update an existing booking
     public boolean updateBooking(Booking updated) throws IOException {
+        if (updated == null) {
+            throw new IllegalArgumentException("Updated booking cannot be null.");
+        }
         List<Booking> bookings = loadBookings();
 
         for (int i = 0; i < bookings.size(); i++) {
@@ -165,6 +177,96 @@ public class BookingStorage {
         return false;
     }
 
+    /** Changes the seat for a booking containing exactly one seat. */
+    public Booking updateBookingSeat(String bookingId, String newSeat) throws IOException {
+        Booking current = findBooking(bookingId);
+        requireActive(current);
+        if (current.seats().size() != 1) {
+            throw new IllegalStateException("Seat changes require a booking with exactly one seat.");
+        }
+        if (newSeat == null || newSeat.isBlank()) {
+            throw new IllegalArgumentException("Seat cannot be blank.");
+        }
+        String normalizedSeat = newSeat.trim().toUpperCase();
+        String expectedPrefix = current.serviceClass().seatPrefix();
+        if (!normalizedSeat.matches(expectedPrefix + "[1-9][0-9]*")) {
+            throw new IllegalArgumentException("Seat does not match the booking's service class.");
+        }
+        int seatNumber = Integer.parseInt(normalizedSeat.substring(expectedPrefix.length()));
+        Flight flight = FlightStorage.getInstance().findFlight(current.flightNumber());
+        if (flight == null || seatNumber > flight.getSeatCount(current.serviceClass())) {
+            throw new IllegalArgumentException("Seat does not exist on this flight.");
+        }
+        if (!normalizedSeat.equalsIgnoreCase(current.seats().get(0))
+                && !availableSeats(flight, current.serviceClass()).contains(normalizedSeat)) {
+            throw new IllegalStateException("Seat " + normalizedSeat + " is already taken.");
+        }
+
+        Booking updated = new Booking(current.bookingId(), current.username(), current.passengerName(),
+                current.flightNumber(), current.serviceClass(), List.of(normalizedSeat),
+                current.totalPrice(), current.status());
+        updateBooking(updated);
+        return updated;
+    }
+
+    /** Moves a booking to another flight, retaining its service class and seat count. */
+    public Booking updateBookingFlight(String bookingId, String newFlightNumber)
+            throws IOException, NotEnoughSeatsException {
+        Booking current = findBooking(bookingId);
+        requireActive(current);
+        if (newFlightNumber == null || newFlightNumber.isBlank()) {
+            throw new IllegalArgumentException("Flight number cannot be blank.");
+        }
+        Flight target = FlightStorage.getInstance().findFlight(newFlightNumber.trim());
+        if (target == null) {
+            throw new IllegalArgumentException("Flight not found: " + newFlightNumber);
+        }
+        if (!target.isBookable()) {
+            throw new IllegalStateException("Cannot move a booking to a cancelled flight.");
+        }
+        if (target.getFlightNumber().equalsIgnoreCase(current.flightNumber())) {
+            throw new IllegalArgumentException("Choose a different flight.");
+        }
+        List<String> newSeats = assignSeats(target, current.serviceClass(), current.seats().size());
+        BigDecimal newTotal = target.getFareFor(current.serviceClass())
+                .multiply(BigDecimal.valueOf(current.seats().size()));
+        Booking updated = new Booking(current.bookingId(), current.username(), current.passengerName(),
+                target.getFlightNumber(), current.serviceClass(), newSeats, newTotal, current.status());
+        updateBooking(updated);
+        return updated;
+    }
+
+    /** Cancels an active booking while retaining its record in the file. */
+    public boolean cancelBooking(String bookingId) throws IOException {
+        Booking current = findBooking(bookingId);
+        if (current == null || !current.isActive()) {
+            return false;
+        }
+        return updateBooking(current.withStatus(BookingStatus.CANCELLED));
+    }
+
+    /** Returns whether a flight has any booking that has not been cancelled. */
+    public boolean hasActiveBookingsOnFlight(String flightNumber) throws IOException {
+        if (flightNumber == null || flightNumber.isBlank()) {
+            return false;
+        }
+        for (Booking booking : loadBookings()) {
+            if (booking.flightNumber().equalsIgnoreCase(flightNumber.trim()) && booking.isActive()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void requireActive(Booking booking) {
+        if (booking == null) {
+            throw new IllegalArgumentException("Booking not found.");
+        }
+        if (!booking.isActive()) {
+            throw new IllegalStateException("Cancelled or completed bookings cannot be modified.");
+        }
+    }
+
     // Cancel bookings that match a condition
     public int cancelBookingsWhere(Predicate<Booking> condition)
             throws IOException {
@@ -175,8 +277,7 @@ public class BookingStorage {
         for (int i = 0; i < bookings.size(); i++) {
             Booking booking = bookings.get(i);
 
-            if (booking.status() != BookingStatus.CANCELLED
-                    && condition.test(booking)) {
+            if (booking.isActive() && condition.test(booking)) {
 
                 bookings.set(i, booking.withStatus(BookingStatus.CANCELLED));
                 cancelled++;
@@ -280,7 +381,7 @@ public class BookingStorage {
 
         for (Booking booking : loadBookings()) {
 
-            if (booking.status() != BookingStatus.CANCELLED
+            if (booking.isActive()
                     && booking.flightNumber().equalsIgnoreCase(flight.getFlightNumber())
                     && booking.serviceClass() == serviceClass) {
 

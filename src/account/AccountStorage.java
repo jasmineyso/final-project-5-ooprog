@@ -82,11 +82,17 @@ public class AccountStorage {
 
     /** One line per account: username|password|email|phoneNumber|address. */
     private String toLine(RegularUser user) throws IOException {
+        if (user == null) {
+            throw new IOException("Cannot save a null user.");
+        }
         String[] details = {
                 user.getUsername(), user.getPassword(), user.getEmail(),
                 user.getPhoneNumber(), user.getAddress()
         };
         for (int i = 0; i < details.length; i++) {
+            if (details[i] == null) {
+                throw new IOException("Account fields cannot be null.");
+            }
             if (details[i].contains("\n") || details[i].contains("\r")) {
                 throw new IOException("Account fields must stay on one line.");
             }
@@ -98,6 +104,9 @@ public class AccountStorage {
 
     public ArrayList<Admin> loadAdmins() throws IOException {
         ArrayList<Admin> admins = new ArrayList<>();
+        if (Files.notExists(adminFilePath)) {
+            return admins;
+        }
         try (BufferedReader reader = Files.newBufferedReader(adminFilePath, StandardCharsets.UTF_8)) {
             String line;
             while ((line = reader.readLine()) != null) {
@@ -141,4 +150,5 @@ public class AccountStorage {
         }
         return users;
     }
+
 }
