@@ -13,6 +13,6 @@ public class ByDate implements FlightFilter {
 
     @Override
     public boolean matches(Flight flight) {
-        return flight.departureTime().toLocalDate().equals(date);
+        return flight.getDepartureTime().toLocalDate().equals(date);
     }
 }

@@ -12,6 +12,6 @@ public class ByStatus implements FlightFilter {
 
     @Override
     public boolean matches(Flight flight) {
-        return flight.status() == status;
+        return flight.getStatus() == status;
     }
 }

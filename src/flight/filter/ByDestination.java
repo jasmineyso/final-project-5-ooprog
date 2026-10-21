@@ -12,6 +12,6 @@ public class ByDestination implements FlightFilter {
 
     @Override
     public boolean matches(Flight flight) {
-        return flight.destination().equalsIgnoreCase(destination);
+        return flight.getDestination().equalsIgnoreCase(destination);
     }
 }

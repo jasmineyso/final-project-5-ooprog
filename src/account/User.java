@@ -21,4 +21,6 @@ public abstract class User {
     public boolean checkPassword(String inputPassword) {
         return password.equals(inputPassword);
     }
+
+    public abstract String getRole();
 }

@@ -1,41 +1,37 @@
+
 package src.booking;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
+import java.io.*;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Predicate;
 
 import src.booking.exception.NotEnoughSeatsException;
 import src.flight.Flight;
 import src.flight.ServiceClass;
 
-/**
- * Saves and loads bookings from BOOKED_FLIGHTS.txt (Singleton, like FlightStorage).
- * Also assigns seats automatically.
- */
-public final class BookingStorage {
+public class BookingStorage {
+
     private static BookingStorage instance;
     private final Path filePath;
 
     private BookingStorage() {
-        // Support launching from either the project or its parent workspace.
         Path directory = Path.of("src", "files");
         Path workspaceDirectory = Path.of("final-project-5-ooprog", "src", "files");
+
         if (Files.isDirectory(workspaceDirectory)) {
             directory = workspaceDirectory;
         }
+
         filePath = directory.resolve("BOOKED_FLIGHTS.txt");
     }
 
+    // Singleton - only one BookingStorage object
     public synchronized static BookingStorage getInstance() {
         if (instance == null) {
             instance = new BookingStorage();
@@ -45,200 +41,285 @@ public final class BookingStorage {
 
     // ===================== LOADING =====================
 
+    // Read all bookings from the text file
     public List<Booking> loadBookings() throws IOException {
         List<Booking> bookings = new ArrayList<>();
+
         if (!Files.exists(filePath)) {
             return bookings;
         }
-        int lineNumber = 0;
-        for (String line : Files.readAllLines(filePath, StandardCharsets.UTF_8)) {
-            lineNumber++;
-            if (line.isBlank()) {
-                continue;
-            }
-            String[] fields = line.split("\\|", -1);
-            try {
-                if (fields.length != 8) {
-                    throw new IllegalArgumentException("Wrong number of fields");
+
+        try (BufferedReader reader = new BufferedReader(
+                new FileReader(filePath.toFile(), StandardCharsets.UTF_8))) {
+
+            String line;
+            int lineNumber = 0;
+
+            while ((line = reader.readLine()) != null) {
+                lineNumber++;
+
+                if (line.isBlank()) {
+                    continue;
                 }
-                List<String> seats = Arrays.asList(fields[5].split(","));
-                bookings.add(new Booking(fields[0], fields[1], fields[2], fields[3],
-                        ServiceClass.valueOf(fields[4]), seats,
-                        new BigDecimal(fields[6]), BookingStatus.valueOf(fields[7])));
-            } catch (IllegalArgumentException e) {
-                throw new IOException("Invalid booking data on line " + lineNumber + " of BOOKED_FLIGHTS.txt.", e);
+
+                String[] fields = line.split("\\|", -1);
+
+                try {
+                    if (fields.length != 8) {
+                        throw new IllegalArgumentException("Invalid number of fields");
+                    }
+
+                    List<String> seats = Arrays.asList(fields[5].split(","));
+
+                    Booking booking = new Booking(
+                            fields[0],
+                            fields[1],
+                            fields[2],
+                            fields[3],
+                            ServiceClass.valueOf(fields[4]),
+                            seats,
+                            new BigDecimal(fields[6]),
+                            BookingStatus.valueOf(fields[7])
+                    );
+
+                    bookings.add(booking);
+
+                } catch (IllegalArgumentException e) {
+                    throw new IOException(
+                            "Invalid booking data on line " + lineNumber, e);
+                }
             }
         }
+
         return bookings;
     }
 
-    /** Returns the booking with this ID (ignores capital letters), or null. */
+    // Find a booking using its booking ID
     public Booking findBooking(String bookingId) throws IOException {
         for (Booking booking : loadBookings()) {
             if (booking.bookingId().equalsIgnoreCase(bookingId.trim())) {
                 return booking;
             }
         }
+
         return null;
     }
 
-    /** Every booking made by one account. */
+    // Get all bookings belonging to a user
     public List<Booking> bookingsOf(String username) throws IOException {
         List<Booking> results = new ArrayList<>();
+
         for (Booking booking : loadBookings()) {
             if (booking.username().equalsIgnoreCase(username)) {
                 results.add(booking);
             }
         }
+
         return results;
     }
 
     // ===================== SAVING =====================
 
-    /** Adds ONE booking to the end of the file. */
+    // Add a new booking without deleting existing bookings
     public void saveBooking(Booking booking) throws IOException {
-        String line = toLine(booking);
         Files.createDirectories(filePath.toAbsolutePath().getParent());
-        try (BufferedWriter writer = Files.newBufferedWriter(filePath, StandardCharsets.UTF_8,
-                StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
-            writer.write(line);
+
+        try (BufferedWriter writer = new BufferedWriter(
+                new FileWriter(filePath.toFile(), StandardCharsets.UTF_8, true))) {
+
+            writer.write(toLine(booking));
             writer.newLine();
         }
     }
 
-    /** Replaces the WHOLE file with this list. */
+    // Replace all bookings in the text file
     public void saveAllBookings(List<Booking> bookings) throws IOException {
-        List<String> lines = new ArrayList<>();
-        for (Booking booking : bookings) {
-            lines.add(toLine(booking));
-        }
         Files.createDirectories(filePath.toAbsolutePath().getParent());
-        Files.write(filePath, lines, StandardCharsets.UTF_8,
-                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+
+        try (BufferedWriter writer = new BufferedWriter(
+                new FileWriter(filePath.toFile(), StandardCharsets.UTF_8))) {
+
+            for (Booking booking : bookings) {
+                writer.write(toLine(booking));
+                writer.newLine();
+            }
+        }
     }
 
-    /** Replaces the saved booking with the same ID. Returns false if it wasn't found. */
+    // Update an existing booking
     public boolean updateBooking(Booking updated) throws IOException {
         List<Booking> bookings = loadBookings();
+
         for (int i = 0; i < bookings.size(); i++) {
-            if (bookings.get(i).bookingId().equalsIgnoreCase(updated.bookingId())) {
+
+            if (bookings.get(i).bookingId()
+                    .equalsIgnoreCase(updated.bookingId())) {
+
                 bookings.set(i, updated);
                 saveAllBookings(bookings);
+
                 return true;
             }
         }
+
         return false;
     }
 
-    /**
-     * Cancels every active (Pending or Paid) booking that matches the condition.
-     * Returns how many bookings were cancelled. Their seats become free again.
-     */
-    public int cancelBookingsWhere(Predicate<Booking> condition) throws IOException {
+    // Cancel bookings that match a condition
+    public int cancelBookingsWhere(Predicate<Booking> condition)
+            throws IOException {
+
         List<Booking> bookings = loadBookings();
         int cancelled = 0;
+
         for (int i = 0; i < bookings.size(); i++) {
             Booking booking = bookings.get(i);
-            if (booking.status() != BookingStatus.CANCELLED && condition.test(booking)) {
+
+            if (booking.status() != BookingStatus.CANCELLED
+                    && condition.test(booking)) {
+
                 bookings.set(i, booking.withStatus(BookingStatus.CANCELLED));
                 cancelled++;
             }
         }
+
         if (cancelled > 0) {
             saveAllBookings(bookings);
         }
+
         return cancelled;
     }
 
-    /** Used when a flight is cancelled. */
+    // Cancel all bookings for a specific flight
     public int cancelBookingsForFlight(String flightNumber) throws IOException {
-        return cancelBookingsWhere(booking -> booking.flightNumber().equalsIgnoreCase(flightNumber));
+        return cancelBookingsWhere(
+                booking -> booking.flightNumber().equalsIgnoreCase(flightNumber));
     }
 
-    /** Used when a user account is deleted. */
+    // Cancel all bookings belonging to a user
     public int cancelBookingsOf(String username) throws IOException {
-        return cancelBookingsWhere(booking -> booking.username().equalsIgnoreCase(username));
+        return cancelBookingsWhere(
+                booking -> booking.username().equalsIgnoreCase(username));
     }
 
-    /**
-     * Moves a booking to another service class: new seats are assigned automatically
-     * and the price is recalculated. Saves and returns the updated booking.
-     */
-    public Booking changeServiceClass(Booking booking, Flight flight, ServiceClass newClass)
+    // Change the service class of an existing booking
+    public Booking changeServiceClass(
+            Booking booking,
+            Flight flight,
+            ServiceClass newClass)
             throws IOException, NotEnoughSeatsException {
+
         int count = booking.seats().size();
+
         List<String> newSeats = assignSeats(flight, newClass, count);
-        BigDecimal newTotal = flight.fareFor(newClass).multiply(BigDecimal.valueOf(count));
-        Booking updated = booking.withServiceClass(newClass, newSeats, newTotal);
+
+        BigDecimal newTotal = flight.getFareFor(newClass)
+                .multiply(BigDecimal.valueOf(count));
+
+        Booking updated = booking.withServiceClass(
+                newClass, newSeats, newTotal);
+
         updateBooking(updated);
+
         return updated;
     }
 
-    /**
-     * Turns one booking into one line of the file (8 fields):
-     * id|username|passengerName|flightNumber|CLASS|seat,seat,...|total|STATUS
-     */
+    // Convert a booking into one line of text
     private String toLine(Booking booking) throws IOException {
+
         String[] fields = {
-                booking.bookingId(), booking.username(), booking.passengerName(), booking.flightNumber(),
-                booking.serviceClass().name(), String.join(",", booking.seats()),
-                booking.totalPrice().toPlainString(), booking.status().name()
+                booking.bookingId(),
+                booking.username(),
+                booking.passengerName(),
+                booking.flightNumber(),
+                booking.serviceClass().name(),
+                String.join(",", booking.seats()),
+                booking.totalPrice().toPlainString(),
+                booking.status().name()
         };
+
         for (String field : fields) {
-            if (field.contains("|") || field.contains("\n") || field.contains("\r")) {
-                throw new IOException("Booking fields cannot contain | or line breaks.");
+            if (field.contains("|")
+                    || field.contains("\n")
+                    || field.contains("\r")) {
+
+                throw new IOException("Invalid booking field.");
             }
         }
+
         return String.join("|", fields);
     }
 
     // ===================== IDS AND SEATS =====================
 
-    /** The next free booking ID: BK0001, BK0002, ... */
+    // Generate the next booking ID
     public String nextBookingId() throws IOException {
         int highest = 0;
+
         for (Booking booking : loadBookings()) {
             try {
-                highest = Math.max(highest, Integer.parseInt(booking.bookingId().substring(2)));
+                int number = Integer.parseInt(
+                        booking.bookingId().substring(2));
+
+                highest = Math.max(highest, number);
+
             } catch (NumberFormatException | IndexOutOfBoundsException e) {
-                // not in BK#### form; ignore it
+                System.out.println("Invalid Booking ID: " + booking.bookingId());
             }
         }
+
         return String.format("BK%04d", highest + 1);
     }
 
-    /** Seats in one class of one flight that are NOT used by any active (non-cancelled) booking. */
-    public List<String> availableSeats(Flight flight, ServiceClass serviceClass) throws IOException {
-        Set<String> taken = new HashSet<>();
+    // Get all available seats for a flight and service class
+    public List<String> availableSeats(
+            Flight flight,
+            ServiceClass serviceClass) throws IOException {
+
+        List<String> taken = new ArrayList<>();
+
         for (Booking booking : loadBookings()) {
+
             if (booking.status() != BookingStatus.CANCELLED
-                    && booking.flightNumber().equalsIgnoreCase(flight.flightNumber())
+                    && booking.flightNumber().equalsIgnoreCase(flight.getFlightNumber())
                     && booking.serviceClass() == serviceClass) {
+
                 taken.addAll(booking.seats());
             }
         }
 
         List<String> available = new ArrayList<>();
-        for (int number = 1; number <= flight.seatCount(serviceClass); number++) {
+
+        for (int number = 1;
+                number <= flight.getSeatCount(serviceClass);
+                number++) {
+
             String seat = serviceClass.seatPrefix() + number;
+
             if (!taken.contains(seat)) {
                 available.add(seat);
             }
         }
+
         return available;
     }
 
-    /**
-     * Picks the first 'count' free seats in a class, e.g. B3, B4.
-     * Throws NotEnoughSeatsException if the class doesn't have that many left.
-     */
-    public List<String> assignSeats(Flight flight, ServiceClass serviceClass, int count)
+    // Automatically assign available seats
+    public List<String> assignSeats(
+            Flight flight,
+            ServiceClass serviceClass,
+            int count)
             throws IOException, NotEnoughSeatsException {
+
         List<String> available = availableSeats(flight, serviceClass);
+
         if (available.size() < count) {
-            throw new NotEnoughSeatsException("Only " + available.size() + " " + serviceClass
-                    + " seat(s) left on flight " + flight.flightNumber() + ".");
+            throw new NotEnoughSeatsException(
+                    "Only " + available.size() + " "
+                    + serviceClass + " seat(s) left on flight "
+                    + flight.getFlightNumber() + ".");
         }
+
         return new ArrayList<>(available.subList(0, count));
     }
 }

@@ -1,9 +1,6 @@
 package src.menu;
 
-import java.util.Scanner;
-
 import src.account.RegularUser;
-import src.core.ErrorMessages;
 import src.menu.admin.AdminAccountMenu;
 import src.menu.admin.AdminBookingMenu;
 import src.menu.admin.AdminFlightMenu;
@@ -11,23 +8,15 @@ import src.menu.regular_user.RegularUserOperations;
 import src.util.Display;
 import src.util.Input;
 
-public class UserInterface {
-<<<<<<< HEAD
+import java.util.Scanner;
 
-=======
-    // Add your user interface logic here
-    // After the user logs in or signs up, it will lead you here.
-    // If the user is an admin, it will lead you to the AdminUI(can be changed)
-    // class.
-    // If the user is a regular user, it will lead you to the UserUI(can be changed)
-    // class.
->>>>>>> a93f2d912a7f82202bf7dc1d4266f061eb7a7641
+public class UserInterface {
     private static UserInterface instance;
     private final Scanner sc = Input.getScanner();
-
     private UserInterface() {}
+    
 
-    public static UserInterface getInstance() {
+    public synchronized static UserInterface getInstance() {
         if (instance == null) {
             instance = new UserInterface();
         }
@@ -48,7 +37,6 @@ public class UserInterface {
                 case 2 -> new AdminBookingMenu().start();
                 case 3 -> new AdminAccountMenu().start();
                 case 4 -> {
-<<<<<<< HEAD
                     System.out.print("Are you sure you want to log out? (y/n): ");
                     String confirm = sc.nextLine().trim();
                     if (confirm.equalsIgnoreCase("y")) {
@@ -57,10 +45,6 @@ public class UserInterface {
                     } else {
                         Display.message("Log out cancelled.");
                     }
-=======
-                    Display.message("Logging out...");
-                    running = false;
->>>>>>> a93f2d912a7f82202bf7dc1d4266f061eb7a7641
                 }
             }
         }
@@ -86,7 +70,6 @@ public class UserInterface {
                 case 4 -> RegularUserOperations.getInstance().payBooking(user);
                 case 5, 6 -> Display.message("Not available yet.");
                 case 7 -> {
-<<<<<<< HEAD
                     System.out.print("Are you sure you want to log out? (y/n): ");
                     String confirm = sc.nextLine().trim();
                     if (confirm.equalsIgnoreCase("y")) {
@@ -95,16 +78,8 @@ public class UserInterface {
                     } else {
                         Display.message("Log out cancelled.");
                     }
-=======
-                    Display.message("Logging out...");
-                    running = false;
->>>>>>> a93f2d912a7f82202bf7dc1d4266f061eb7a7641
                 }
             }
         }
     }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> a93f2d912a7f82202bf7dc1d4266f061eb7a7641

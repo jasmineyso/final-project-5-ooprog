@@ -76,7 +76,6 @@ public class SignUp {
         return new RegularUser(username, password, email, phoneNumber, address);
     }
 
-    /** True if another account already uses this username (ignores capital letters). */
     private boolean isUsernameTaken(String username) {
         try {
             return AccountStorage.getInstance().findUser(username) != null;

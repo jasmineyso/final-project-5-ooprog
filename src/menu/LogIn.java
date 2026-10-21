@@ -29,11 +29,14 @@ public class LogIn {
             Display.error("Invalid username or password. Please try again.");
             return;
         }
+        System.out.printf("%nRole: %s%n", admin.getRole());
         Display.message("Welcome, " + admin.getUsername() + "!");
         UserInterface.getInstance().adminUI();
     }
 
-    /** Returns the admin with this username and password, or null if there is none. */
+    /**
+     * Returns the admin with this username and password, or null if there is none.
+     */
     private Admin findAdmin(String username, String password) {
         try {
             for (Admin admin : AccountStorage.getInstance().loadAdmins()) {
@@ -60,6 +63,8 @@ public class LogIn {
                 Display.error(ErrorMessages.INVALID_CREDENTIALS);
                 return;
             }
+
+            System.out.printf("%nRole: %s%n", user.getRole());
             Display.message("Login successful! Welcome, " + user.getUsername() + "!");
             UserInterface.getInstance().userUI(user);
         } catch (IOException e) {

@@ -2,92 +2,143 @@ package src.flight;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.Map;
 
 import src.util.Validator;
 
 /**
- * One flight. It is a record, so its values never change after it is created.
- * To "change" a flight (e.g. its status), make a new Flight and save that instead.
- *
- * fares and seats hold one value per service class, for example:
- *   fares: Economy = 1500.00, Premium Economy = 2500.00, Business = 5000.00, First Class = 9000.00
- *   seats: Economy = 100,     Premium Economy = 25,      Business = 15,      First Class = 10
- * The seat numbers come from ServiceClass (150 seats per flight).
+ * Stores one flight, including a fare and seat capacity for each service class.
+ * Fields cannot be reassigned. The with... methods return updated copies.
  */
-public record Flight(String flightNumber, String gateNumber, String origin, String destination,
-        LocalDateTime departureTime, LocalDateTime arrivalTime, FlightStatus status,
-        Map<ServiceClass, BigDecimal> fares, Map<ServiceClass, Integer> seats) {
+public class Flight {
+    private final String flightNumber;
+    private final String gateNumber;
+    private final String origin;
+    private final String destination;
+    private final LocalDateTime departureTime;
+    private final LocalDateTime arrivalTime;
+    private final FlightStatus status;
+    private final BigDecimal economyFare;
+    private final BigDecimal premiumEconomyFare;
+    private final BigDecimal businessFare;
+    private final BigDecimal firstClassFare;
+    private final int economySeats;
+    private final int premiumEconomySeats;
+    private final int businessSeats;
+    private final int firstClassSeats;
 
-    /** Runs on every new Flight: copies the maps so they can't be changed from outside. */
-    public Flight {
-        fares = copyOf(fares, BigDecimal.ZERO);
-        seats = copyOf(seats, 0);
+    public Flight(String flightNumber, String gateNumber, String origin, String destination,
+            LocalDateTime departureTime, LocalDateTime arrivalTime, FlightStatus status,
+            BigDecimal economyFare, BigDecimal premiumEconomyFare, BigDecimal businessFare, BigDecimal firstClassFare,
+            int economySeats, int premiumEconomySeats, int businessSeats, int firstClassSeats) {
+        this.flightNumber = flightNumber;
+        this.gateNumber = gateNumber;
+        this.origin = origin;
+        this.destination = destination;
+        this.departureTime = departureTime;
+        this.arrivalTime = arrivalTime;
+        this.status = status;
+        this.economyFare = economyFare;
+        this.premiumEconomyFare = premiumEconomyFare;
+        this.businessFare = businessFare;
+        this.firstClassFare = firstClassFare;
+        this.economySeats = economySeats;
+        this.premiumEconomySeats = premiumEconomySeats;
+        this.businessSeats = businessSeats;
+        this.firstClassSeats = firstClassSeats;
     }
 
-    /** Copies a map, filling in any missing service class with a default value. */
-    private static <V> Map<ServiceClass, V> copyOf(Map<ServiceClass, V> source, V missingValue) {
-        Map<ServiceClass, V> copy = new EnumMap<>(ServiceClass.class);
-        for (ServiceClass serviceClass : ServiceClass.values()) {
-            copy.put(serviceClass, source.getOrDefault(serviceClass, missingValue));
-        }
-        return Collections.unmodifiableMap(copy);
+    public String getFlightNumber() {
+        return flightNumber;
     }
 
-    /** The fare for one service class. */
-    public BigDecimal fareFor(ServiceClass serviceClass) {
-        return fares.get(serviceClass);
+    public String getGateNumber() {
+        return gateNumber;
     }
 
-    /** How many seats one service class has. */
-    public int seatCount(ServiceClass serviceClass) {
-        return seats.get(serviceClass);
+    public String getOrigin() {
+        return origin;
     }
 
-    /** All seats on the plane, every class added together. */
-    public int totalSeats() {
-        int total = 0;
-        for (int count : seats.values()) {
-            total += count;
-        }
-        return total;
+    public String getDestination() {
+        return destination;
     }
 
-    /** A copy of this flight with a different status. */
+    public LocalDateTime getDepartureTime() {
+        return departureTime;
+    }
+
+    public LocalDateTime getArrivalTime() {
+        return arrivalTime;
+    }
+
+    public FlightStatus getStatus() {
+        return status;
+    }
+
+    public BigDecimal getEconomyFare() {
+        return economyFare;
+    }
+
+    public BigDecimal getPremiumEconomyFare() {
+        return premiumEconomyFare;
+    }
+
+    public BigDecimal getBusinessFare() {
+        return businessFare;
+    }
+
+    public BigDecimal getFirstClassFare() {
+        return firstClassFare;
+    }
+
+    /** Returns the fare per passenger for the selected class. */
+    public BigDecimal getFareFor(ServiceClass serviceClass) {
+        return switch (serviceClass) {
+            case ECONOMY -> economyFare;
+            case PREMIUM_ECONOMY -> premiumEconomyFare;
+            case BUSINESS -> businessFare;
+            case FIRST_CLASS -> firstClassFare;
+        };
+    }
+
+    /** Returns the seat capacity of the selected class. */
+    public int getSeatCount(ServiceClass serviceClass) {
+        return switch (serviceClass) {
+            case ECONOMY -> economySeats;
+            case PREMIUM_ECONOMY -> premiumEconomySeats;
+            case BUSINESS -> businessSeats;
+            case FIRST_CLASS -> firstClassSeats;
+        };
+    }
+
+    public int getTotalSeats() {
+        return economySeats + premiumEconomySeats + businessSeats + firstClassSeats;
+    }
+
+    public int getNumberOfSeats() {
+        return getTotalSeats();
+    }
+
     public Flight withStatus(FlightStatus newStatus) {
         return new Flight(flightNumber, gateNumber, origin, destination,
-                departureTime, arrivalTime, newStatus, fares, seats);
+                departureTime, arrivalTime, newStatus,
+                economyFare, premiumEconomyFare, businessFare, firstClassFare,
+                economySeats, premiumEconomySeats, businessSeats, firstClassSeats);
     }
 
-    /** A copy of this flight with new departure and arrival times. */
     public Flight withTimes(LocalDateTime newDeparture, LocalDateTime newArrival) {
         return new Flight(flightNumber, gateNumber, origin, destination,
-                newDeparture, newArrival, status, fares, seats);
+                newDeparture, newArrival, status,
+                economyFare, premiumEconomyFare, businessFare, firstClassFare,
+                economySeats, premiumEconomySeats, businessSeats, firstClassSeats);
     }
 
-    /** A copy of this flight with new fares. */
-    public Flight withFares(Map<ServiceClass, BigDecimal> newFares) {
+    public Flight withFares(BigDecimal newEconomyFare, BigDecimal newPremiumEconomyFare,
+            BigDecimal newBusinessFare, BigDecimal newFirstClassFare) {
         return new Flight(flightNumber, gateNumber, origin, destination,
-                departureTime, arrivalTime, status, newFares, seats);
-}
-
-    // Kept so code written for the old Flight still compiles.
-    public BigDecimal economyFare() {
-        return fareFor(ServiceClass.ECONOMY);
-    }
-
-    public BigDecimal businessFare() {
-        return fareFor(ServiceClass.BUSINESS);
-    }
-
-    public BigDecimal firstClassFare() {
-        return fareFor(ServiceClass.FIRST_CLASS);
-    }
-
-    public int numberOfSeats() {
-        return totalSeats();
+                departureTime, arrivalTime, status,
+                newEconomyFare, newPremiumEconomyFare, newBusinessFare, newFirstClassFare,
+                economySeats, premiumEconomySeats, businessSeats, firstClassSeats);
     }
 
     @Override

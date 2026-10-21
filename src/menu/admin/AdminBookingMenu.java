@@ -15,6 +15,7 @@ import src.flight.FlightStatus;
 import src.flight.FlightStorage;
 import src.flight.ServiceClass;
 import src.util.Display;
+import src.util.InformationTables;
 import src.util.Input;
 
 /**
@@ -116,18 +117,11 @@ public class AdminBookingMenu {
                 return;
             }
             matches.sort(Comparator.comparing(Booking::bookingId));
-            for (Booking booking : matches) {
-                Display.message(describe(booking));
-            }
+            InformationTables.bookings(matches);
             Display.message(matches.size() + " booking(s)");
         } catch (IOException e) {
             Display.error("Could not load bookings: " + e.getMessage());
         }
-    }
-
-    /** The admin also sees which account made the booking. */
-    private String describe(Booking booking) {
-        return booking + " | Account: " + booking.username();
     }
 
     // ===================== UPDATE / CANCEL =====================
@@ -141,7 +135,7 @@ public class AdminBookingMenu {
                 Display.error("Booking " + bookingId + " was not found.");
                 return;
             }
-            Display.message(describe(booking));
+            InformationTables.bookings(List.of(booking));
             if (booking.status() == BookingStatus.CANCELLED) {
                 Display.error("This booking is already cancelled.");
                 return;
@@ -168,7 +162,7 @@ public class AdminBookingMenu {
             return;
         }
         Flight flight = FlightStorage.getInstance().findFlight(booking.flightNumber());
-        if (flight == null || flight.status() == FlightStatus.CANCELLED) {
+        if (flight == null || flight.getStatus() == FlightStatus.CANCELLED) {
             Display.error("Flight " + booking.flightNumber() + " is no longer available.");
             return;
         }
@@ -177,7 +171,7 @@ public class AdminBookingMenu {
         String[] options = new String[classes.length];
         for (int i = 0; i < classes.length; i++) {
             int left = BookingStorage.getInstance().availableSeats(flight, classes[i]).size();
-            options[i] = classes[i] + " - PHP " + flight.fareFor(classes[i]).toPlainString()
+            options[i] = classes[i] + " - PHP " + flight.getFareFor(classes[i]).toPlainString()
                     + " (" + left + " seats left)";
         }
         ServiceClass newClass = classes[Input.askChoice("Choose the New Service Class", options) - 1];
@@ -189,7 +183,7 @@ public class AdminBookingMenu {
         try {
             Booking updated = BookingStorage.getInstance().changeServiceClass(booking, flight, newClass);
             Display.success("Booking " + updated.bookingId() + " moved to " + newClass + ".");
-            Display.message(describe(updated));
+            InformationTables.bookings(List.of(updated));
         } catch (NotEnoughSeatsException e) {
             Display.error(e.getMessage());
         }
