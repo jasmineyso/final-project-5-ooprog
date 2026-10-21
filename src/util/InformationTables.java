@@ -2,10 +2,12 @@ package src.util;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.ArrayList;
 
 import src.account.RegularUser;
 import src.booking.Booking;
 import src.flight.Flight;
+import src.menu.regular_user.PassengerSeat;
 
 /** Shared columns and formatting for information shown by both user roles. */
 public class InformationTables {
@@ -33,16 +35,28 @@ public class InformationTables {
     }
 
     public static void bookings(List<Booking> bookings) {
-        String[] headers = { "Booking ID", "Passenger", "Account", "Flight Number", "Service Class", "Seats",
+        String[] headers = { "Booking ID", "Passenger", "Account", "Flight Number", "Service Class", "Seat",
                 "Fee", "Booking Status" };
-        String[][] rows = new String[bookings.size()][];
-        for (int i = 0; i < bookings.size(); i++) {
-            Booking booking = bookings.get(i);
-            rows[i] = new String[] { booking.bookingId(), booking.passengerName(), booking.username(),
-                    booking.flightNumber(), booking.serviceClass().toString(), String.join(", ", booking.seats()),
-                    money(booking.totalPrice()), booking.status().toString() };
+        List<String[]> rows = new ArrayList<>();
+        for (Booking booking : bookings) {
+            boolean first = true;
+            for (PassengerSeat passenger : booking.passengers()) {
+                rows.add(new String[] { booking.bookingId(), passenger.getPassengerName(), booking.username(),
+                        booking.flightNumber(), booking.serviceClass().toString(), passenger.getSeatNumber(),
+                        first ? money(booking.totalPrice()) : "", booking.status().toString() });
+                first = false;
+            }
         }
-        Display.table(headers, rows);
+        Display.table(headers, rows.toArray(new String[0][]));
+    }
+
+    public static void passengers(Booking booking) {
+        String[][] rows = new String[booking.passengers().size()][];
+        for (int i = 0; i < rows.length; i++) {
+            PassengerSeat passenger = booking.passengers().get(i);
+            rows[i] = new String[] { passenger.getSeatNumber(), passenger.getPassengerName() };
+        }
+        Display.table(new String[] { "Seat", "Passenger Name" }, rows);
     }
 
     public static void users(List<RegularUser> users) {

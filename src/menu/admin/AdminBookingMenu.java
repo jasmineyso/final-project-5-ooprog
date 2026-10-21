@@ -76,7 +76,8 @@ public class AdminBookingMenu {
             return;
         }
         showBookings("Bookings for \"" + search + "\"",
-                booking -> booking.passengerName().toLowerCase().contains(search));
+                booking -> booking.passengers().stream().anyMatch(
+                        passenger -> passenger.getPassengerName().toLowerCase().contains(search)));
     }
 
     private void filterByFlight() {

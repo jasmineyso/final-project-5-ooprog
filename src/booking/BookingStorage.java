@@ -6,6 +6,8 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -15,6 +17,7 @@ import src.booking.exception.NotEnoughSeatsException;
 import src.flight.Flight;
 import src.flight.FlightStorage;
 import src.flight.ServiceClass;
+import src.menu.regular_user.PassengerSeat;
 
 public class BookingStorage {
 
@@ -66,28 +69,36 @@ public class BookingStorage {
                 String[] fields = line.split("\\|", -1);
 
                 try {
-                    if (fields.length != 8) {
+                    if (fields.length != 8 && fields.length != 7) {
                         throw new IllegalArgumentException("Invalid number of fields");
                     }
 
-                    List<String> seats = Arrays.asList(fields[5].split(","));
-
-                    Booking booking = new Booking(
-                            fields[0],
-                            fields[1],
-                            fields[2],
-                            fields[3],
-                            ServiceClass.valueOf(fields[4]),
-                            seats,
-                            new BigDecimal(fields[6]),
-                            parseStatus(fields[7])
-                    );
+                    Booking booking;
+                    if (fields.length == 8) {
+                        booking = new Booking(fields[0], fields[1], fields[2], fields[3],
+                                ServiceClass.valueOf(fields[4]), Arrays.asList(fields[5].split(",", -1)),
+                                new BigDecimal(fields[6]), parseStatus(fields[7]));
+                    } else {
+                        List<PassengerSeat> passengers = new ArrayList<>();
+                        for (String entry : fields[4].split(";", -1)) {
+                            String[] pair = entry.split(":", -1);
+                            if (pair.length != 2) {
+                                throw new IllegalArgumentException("Invalid passenger-seat entry");
+                            }
+                            // Retain old usernames as names when a legacy booking has been saved again.
+                            passengers.add(PassengerSeat.fromLegacy(pair[0], pair[1]));
+                        }
+                        booking = new Booking(fields[0], fields[1], fields[2],
+                                ServiceClass.valueOf(fields[3]), passengers,
+                                new BigDecimal(fields[5]), parseStatus(fields[6]));
+                    }
 
                     bookings.add(booking);
 
                 } catch (IllegalArgumentException e) {
                     throw new IOException(
-                            "Invalid booking data on line " + lineNumber, e);
+                            "Invalid booking data on line " + lineNumber
+                                    + ". Fix this record before saving; no bookings were changed.", e);
                 }
             }
         }
@@ -130,33 +141,88 @@ public class BookingStorage {
     // ===================== SAVING =====================
 
     // Add a new booking without deleting existing bookings
-    public void saveBooking(Booking booking) throws IOException {
-        Files.createDirectories(filePath.toAbsolutePath().getParent());
-
-        try (BufferedWriter writer = new BufferedWriter(
-                new FileWriter(filePath.toFile(), StandardCharsets.UTF_8, true))) {
-
-            writer.write(toLine(booking));
-            writer.newLine();
+    public synchronized void saveBooking(Booking booking) throws IOException {
+        List<Booking> bookings = loadBookings();
+        for (Booking existing : bookings) {
+            if (existing.bookingId().equalsIgnoreCase(booking.bookingId())) {
+                throw new IOException("This booking ID already exists. Please start the booking again.");
+            }
         }
+        validateSeats(booking, bookings);
+        bookings.add(booking);
+        saveAllBookings(bookings);
     }
 
     // Replace all bookings in the text file
-    public void saveAllBookings(List<Booking> bookings) throws IOException {
-        Files.createDirectories(filePath.toAbsolutePath().getParent());
+    public synchronized void saveAllBookings(List<Booking> bookings) throws IOException {
+        List<String> lines = new ArrayList<>();
+        java.util.Set<String> ids = new java.util.HashSet<>();
+        java.util.Set<String> occupied = new java.util.HashSet<>();
+        for (Booking booking : bookings) {
+            if (!ids.add(booking.bookingId().toUpperCase(java.util.Locale.ROOT))) {
+                throw new IOException("Duplicate booking ID: " + booking.bookingId());
+            }
+            if (booking.isActive()) {
+                for (String seat : booking.seats()) {
+                    String key = booking.flightNumber().toUpperCase(java.util.Locale.ROOT) + ":" + seat;
+                    if (!occupied.add(key)) throw new IOException("Seat is already occupied: " + key);
+                }
+            }
+            lines.add(toLine(booking));
+        }
+        // Prepare the entire replacement before touching the original booking file.
+        Path target = filePath.toAbsolutePath();
+        Files.createDirectories(target.getParent());
+        Path temporary = Files.createTempFile(target.getParent(), "bookings-", ".tmp");
+        try {
+            Files.write(temporary, lines, StandardCharsets.UTF_8);
+            Path backup = target.resolveSibling("BOOKED_FLIGHTS.txt.legacy.bak");
+            if (Files.exists(target) && !Files.exists(backup)) {
+                for (String line : Files.readAllLines(target, StandardCharsets.UTF_8)) {
+                    if (line.split("\\|", -1).length == 8) {
+                        Files.copy(target, backup);
+                        break;
+                    }
+                }
+            }
+            try {
+                Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } finally {
+            Files.deleteIfExists(temporary);
+        }
+    }
 
-        try (BufferedWriter writer = new BufferedWriter(
-                new FileWriter(filePath.toFile(), StandardCharsets.UTF_8))) {
-
-            for (Booking booking : bookings) {
-                writer.write(toLine(booking));
-                writer.newLine();
+    private void validateSeats(Booking booking, List<Booking> bookings) throws IOException {
+        if (!booking.isActive()) return;
+        Flight flight = FlightStorage.getInstance().findFlight(booking.flightNumber());
+        if (flight == null || !flight.isBookable()) {
+            throw new IOException("The flight is no longer available.");
+        }
+        for (String seat : booking.seats()) {
+            int number;
+            try {
+                number = Integer.parseInt(seat.substring(1));
+            } catch (NumberFormatException e) {
+                throw new IOException("Invalid seat number: " + seat, e);
+            }
+            if (number > flight.getSeatCount(booking.serviceClass())) {
+                throw new IOException("Seat does not exist on this flight: " + seat);
+            }
+            for (Booking other : bookings) {
+                if (other.isActive() && !other.bookingId().equalsIgnoreCase(booking.bookingId())
+                        && other.flightNumber().equalsIgnoreCase(booking.flightNumber())
+                        && other.seats().contains(seat)) {
+                    throw new IOException("Seat " + seat + " is no longer available. Please start again.");
+                }
             }
         }
     }
 
     // Update an existing booking
-    public boolean updateBooking(Booking updated) throws IOException {
+    public synchronized boolean updateBooking(Booking updated) throws IOException {
         if (updated == null) {
             throw new IllegalArgumentException("Updated booking cannot be null.");
         }
@@ -167,6 +233,7 @@ public class BookingStorage {
             if (bookings.get(i).bookingId()
                     .equalsIgnoreCase(updated.bookingId())) {
 
+                validateSeats(updated, bookings);
                 bookings.set(i, updated);
                 saveAllBookings(bookings);
 
@@ -202,10 +269,9 @@ public class BookingStorage {
             throw new IllegalStateException("Seat " + normalizedSeat + " is already taken.");
         }
 
-        Booking updated = new Booking(current.bookingId(), current.username(), current.passengerName(),
-                current.flightNumber(), current.serviceClass(), List.of(normalizedSeat),
-                current.totalPrice(), current.status());
-        updateBooking(updated);
+        Booking updated = current.withAssignedSeats(current.flightNumber(), current.serviceClass(),
+                List.of(normalizedSeat), current.totalPrice());
+        if (!updateBooking(updated)) throw new IOException("Booking was not found.");
         return updated;
     }
 
@@ -214,6 +280,9 @@ public class BookingStorage {
             throws IOException, NotEnoughSeatsException {
         Booking current = findBooking(bookingId);
         requireActive(current);
+        if (current.status() != BookingStatus.PENDING) {
+            throw new IOException("Only Pending bookings can change flights.");
+        }
         if (newFlightNumber == null || newFlightNumber.isBlank()) {
             throw new IllegalArgumentException("Flight number cannot be blank.");
         }
@@ -230,9 +299,8 @@ public class BookingStorage {
         List<String> newSeats = assignSeats(target, current.serviceClass(), current.seats().size());
         BigDecimal newTotal = target.getFareFor(current.serviceClass())
                 .multiply(BigDecimal.valueOf(current.seats().size()));
-        Booking updated = new Booking(current.bookingId(), current.username(), current.passengerName(),
-                target.getFlightNumber(), current.serviceClass(), newSeats, newTotal, current.status());
-        updateBooking(updated);
+        Booking updated = current.withAssignedSeats(target.getFlightNumber(), current.serviceClass(), newSeats, newTotal);
+        if (!updateBooking(updated)) throw new IOException("Booking was not found.");
         return updated;
     }
 
@@ -310,6 +378,10 @@ public class BookingStorage {
             ServiceClass newClass)
             throws IOException, NotEnoughSeatsException {
 
+        requireActive(booking);
+        if (booking.status() != BookingStatus.PENDING) {
+            throw new IOException("Only Pending bookings can change service class.");
+        }
         int count = booking.seats().size();
 
         List<String> newSeats = assignSeats(flight, newClass, count);
@@ -320,21 +392,23 @@ public class BookingStorage {
         Booking updated = booking.withServiceClass(
                 newClass, newSeats, newTotal);
 
-        updateBooking(updated);
+        if (!updateBooking(updated)) throw new IOException("Booking was not found.");
 
         return updated;
     }
 
     // Convert a booking into one line of text
     private String toLine(Booking booking) throws IOException {
-
+        List<String> entries = new ArrayList<>();
+        for (PassengerSeat passenger : booking.passengers()) {
+            entries.add(passenger.getSeatNumber() + ":" + passenger.getPassengerName());
+        }
         String[] fields = {
                 booking.bookingId(),
                 booking.username(),
-                booking.passengerName(),
                 booking.flightNumber(),
                 booking.serviceClass().name(),
-                String.join(",", booking.seats()),
+                String.join(";", entries),
                 booking.totalPrice().toPlainString(),
                 booking.status().name()
         };

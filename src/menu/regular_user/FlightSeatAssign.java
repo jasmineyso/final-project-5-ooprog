@@ -28,23 +28,20 @@ public class FlightSeatAssign {
         this.numberOfSeats = numberOfSeats;
     }
 
-    public Booking prepareBookingFor(RegularUser user) throws IOException, NotEnoughSeatsException {
+    public List<String> assignSeats() throws IOException, NotEnoughSeatsException {
         if (flight.getStatus() == FlightStatus.CANCELLED) {
             throw new IOException("This flight is cancelled.");
         }
 
-        BookingStorage storage = BookingStorage.getInstance();
-            
-        List<String> seats = storage.assignSeats(flight, serviceClass, numberOfSeats);
-            
+        return BookingStorage.getInstance().assignSeats(flight, serviceClass, numberOfSeats);
+    }
+
+    public Booking prepareBookingFor(RegularUser user, List<PassengerSeat> passengers) throws IOException {
+        if (passengers.size() != numberOfSeats) {
+            throw new IllegalArgumentException("Enter exactly one passenger name per assigned seat.");
+        }
         BigDecimal totalPrice = flight.getFareFor(serviceClass).multiply(BigDecimal.valueOf(numberOfSeats));
-            
-        // Accounts have no separate passenger name, so use the account username.
-            
-        Booking booking = new Booking(storage.nextBookingId(), user.getUsername(),
-                    user.getUsername(), flight.getFlightNumber(), serviceClass, seats,
-                    totalPrice, BookingStatus.PENDING);
-            
-        return booking;
+        return new Booking(BookingStorage.getInstance().nextBookingId(), user.getUsername(),
+                flight.getFlightNumber(), serviceClass, passengers, totalPrice, BookingStatus.PENDING);
     }
 }

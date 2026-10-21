@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
+import src.account.Access;
 import src.account.RegularUser;
 import src.booking.Booking;
 import src.booking.BookingStatus;
@@ -83,13 +84,14 @@ public class RegularUserOperations {
     }
 
     public void viewBookedFlights(RegularUser user) {
-        System.out.println("BOOKINGS");
         try {
             List<Booking> bookings = BookingStorage.getInstance().bookingsOf(user.getUsername());
             if (bookings.isEmpty()) {
                 System.out.println("You have no bookings yet.");
                 return;
             }
+
+            System.out.println("BOOKINGS");
             Map<String, Flight> flights = new LinkedHashMap<>();
             try {
                 for (Flight flight : FlightStorage.getInstance().loadFlights()) {
@@ -136,7 +138,7 @@ public class RegularUserOperations {
     private void displayBooking(Booking booking, Flight flight) {
         List<String[]> rows = new ArrayList<>();
         rows.add(new String[] { "Booking ID", booking.bookingId() });
-        rows.add(new String[] { "Passenger", booking.passengerName() });
+        rows.add(new String[] { "Account", booking.username() });
         rows.add(new String[] { "Flight Number", booking.flightNumber() });
         if (flight == null) {
             System.out.println("Flight details unavailable; the flight may have been removed.");
@@ -153,6 +155,7 @@ public class RegularUserOperations {
         rows.add(new String[] { "Fee", InformationTables.money(booking.totalPrice()) });
         rows.add(new String[] { "Booking Status", booking.status().toString() });
         Display.table(new String[] { "Detail", "Information" }, rows.toArray(new String[0][]));
+        InformationTables.passengers(booking);
     }
 
     public void bookFlight(RegularUser user) {
@@ -205,7 +208,9 @@ public class RegularUserOperations {
                             Integer.toString(remaining), Integer.toString(selectedFlight.getSeatCount(serviceClass)),
                             remaining == 0 ? "Sold Out" : "Available" });
                 }
-                Display.table(new String[] { "Choice", "Service Class", "Fare", "Remaining Seats", "Capacity", "Availability" },
+                Display.table(
+                        new String[] { "Choice", "Service Class", "Fare", "Remaining Seats", "Capacity",
+                                "Availability" },
                         serviceRows.toArray(new String[0][]));
             } catch (IOException e) {
                 System.out.println("Could not load seat availability: " + e.getMessage());
@@ -260,7 +265,8 @@ public class RegularUserOperations {
             }
 
             if (availableSeats == 0) {
-                System.out.println("This service class is sold out. Please start again and choose another service class.");
+                System.out.println(
+                        "This service class is sold out. Please start again and choose another service class.");
                 return;
             }
             System.out.printf("Enter Number of Seats(1-%d): ", Math.min(9, availableSeats));
@@ -279,12 +285,20 @@ public class RegularUserOperations {
             }
 
             isNumberOfSeatsValid = true;
+
         }
 
         try {
             // Auto assigns the seat
             FlightSeatAssign seatAssignment = new FlightSeatAssign(selectedFlight, selectedServiceClass, numberOfSeats);
-            Booking booking = seatAssignment.prepareBookingFor(user);
+            List<String> seats = seatAssignment.assignSeats();
+            List<PassengerSeat> passengers = collectPassengerDetails(selectedFlight, selectedServiceClass, seats, user);
+            if (passengers == null) {
+                Display.message("Booking cancelled. No seats were reserved.");
+                return;
+            }
+            Booking booking = seatAssignment.prepareBookingFor(user, passengers);
+            InformationTables.passengers(booking);
             System.out.println("Assigned seats: " + String.join(", ", booking.seats()));
             System.out.printf("Total price: PHP %,.2f%n", booking.totalPrice());
 
@@ -309,6 +323,148 @@ public class RegularUserOperations {
             System.out.println(e.getMessage());
         } catch (IOException e) {
             System.out.println(ErrorMessages.BOOKING_SAVE_FAILED + e.getMessage());
+        }
+    }
+
+    private List<PassengerSeat> collectPassengerDetails(Flight flight, ServiceClass serviceClass,
+            List<String> seats, RegularUser user) {
+        Display.title("Passenger Details");
+        Display.message("Flight: " + flight.getFlightNumber() + " | Service Class: " + serviceClass
+                + " | Number of Seats: " + seats.size());
+        Display.message("Enter 0 to cancel the booking.");
+        List<PassengerSeat> passengers = new ArrayList<>();
+        for (String seat : seats) {
+            String defaultName = passengers.isEmpty() && PassengerSeat.isValidName(user.getUsername())
+                    ? user.getUsername()
+                    : null;
+            boolean isPassengerNameValid = false;
+            while (!isPassengerNameValid) {
+                Display.prompt("Seat " + seat + " - Passenger Name"
+                        + (defaultName == null ? "" : " [Enter for " + defaultName + "]"));
+                String input = sc.nextLine();
+                String name = input.trim();
+                if (name.equals("0"))
+                    return null;
+                if (input.isEmpty() && defaultName != null)
+                    name = defaultName;
+                try {
+                    passengers.add(new PassengerSeat(seat, name));
+                    isPassengerNameValid = true;
+                } catch (IllegalArgumentException e) {
+                    Display.error(e.getMessage());
+                }
+            }
+        }
+        return passengers;
+    }
+
+    /** Lets a passenger change the service class of their own pending booking. */
+    public void updateBookedFlight(RegularUser user) {
+        Display.title("Update Booked Flight");
+        try {
+            Booking booking = selectOwnBooking(user);
+            if (booking == null) {
+                return;
+            }
+            if (booking.status() != BookingStatus.PENDING) {
+                Display.error("Only Pending bookings can be changed. Paid bookings must be cancelled instead.");
+                return;
+            }
+            Flight flight = FlightStorage.getInstance().findFlight(booking.flightNumber());
+            if (flight == null || flight.getStatus() == FlightStatus.CANCELLED) {
+                Display.error("This flight is no longer available.");
+                return;
+            }
+
+            ServiceClass[] classes = ServiceClass.values();
+            String[] options = new String[classes.length + 1];
+            for (int i = 0; i < classes.length; i++) {
+                int remaining = bookingStorage.availableSeats(flight, classes[i]).size();
+                options[i] = classes[i] + " - " + InformationTables.money(flight.getFareFor(classes[i]))
+                        + " (" + remaining + " seats left)";
+            }
+            options[classes.length] = "Back";
+            int choice = Input.askChoice("Choose the New Service Class", options);
+            if (choice == options.length) {
+                return;
+            }
+            ServiceClass newClass = classes[choice - 1];
+            if (newClass == booking.serviceClass()) {
+                Display.error("The booking is already in " + newClass + ".");
+                return;
+            }
+            if (bookingStorage.availableSeats(flight, newClass).size() < booking.seats().size()) {
+                Display.error("There are not enough seats in " + newClass + " for this booking.");
+                return;
+            }
+            BigDecimal newTotal = flight.getFareFor(newClass)
+                    .multiply(BigDecimal.valueOf(booking.seats().size()));
+            Display.message("New total: " + InformationTables.money(newTotal));
+            if (!Input.askYesNo("Change service class to " + newClass + "?")) {
+                Display.message("Booking not changed.");
+                return;
+            }
+            Booking updated = bookingStorage.changeServiceClass(booking, flight, newClass);
+            Display.success("Booking " + updated.bookingId() + " has been updated.");
+            InformationTables.bookings(List.of(updated));
+        } catch (IOException | NotEnoughSeatsException e) {
+            Display.error("Could not update booking: " + e.getMessage());
+        }
+    }
+
+    public void cancelBookedFlight(RegularUser user) {
+        Display.title("Cancel Booked Flight");
+        try {
+            Booking booking = selectOwnBooking(user);
+            if (booking == null) {
+                return;
+            }
+            if (!Input.askYesNo("Cancel booking " + booking.bookingId() + "?")) {
+                Display.message("Booking not changed.");
+                return;
+            }
+            if (!bookingStorage.cancelBooking(booking.bookingId())) {
+                Display.error("Booking was not found or is no longer active.");
+                return;
+            }
+            Display.success("Booking " + booking.bookingId() + " has been cancelled. Its seats are free again.");
+            if (booking.status() == BookingStatus.PAID) {
+                Display.message("Contact an administrator about a refund of "
+                        + InformationTables.money(booking.totalPrice()) + ".");
+            }
+        } catch (IOException e) {
+            Display.error("Could not cancel booking: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Shows only the logged-in passenger's bookings and checks ownership before
+     * use.
+     */
+    private Booking selectOwnBooking(RegularUser user) throws IOException {
+        List<Booking> bookings = bookingStorage.bookingsOf(user.getUsername());
+        if (bookings.isEmpty()) {
+            Display.message("You have no bookings yet.");
+            return null;
+        }
+        InformationTables.bookings(bookings);
+        while (true) {
+            Display.prompt("Enter Booking ID (0 to go back)");
+            String bookingId = sc.nextLine().trim();
+            if (bookingId.equals("0")) {
+                return null;
+            }
+            Booking booking = bookingStorage.findBooking(bookingId);
+            if (booking == null || !booking.username().equalsIgnoreCase(user.getUsername())) {
+                Display.error("Booking not found in your account.");
+                continue;
+            }
+            Access.requireOwnerOrAdmin(user, booking.username());
+            if (!booking.isActive()) {
+                Display.error("Cancelled or completed bookings cannot be modified.");
+                continue;
+            }
+            return booking;
         }
     }
 
@@ -387,7 +543,10 @@ public class RegularUserOperations {
         }
     }
 
-    /** Collects and confirms payment without saving. A null result means payment was cancelled. */
+    /**
+     * Collects and confirms payment without saving. A null result means payment was
+     * cancelled.
+     */
     private BigDecimal collectPayment(Booking booking) {
         System.out.printf("Amount due: PHP %,.2f%n", booking.totalPrice());
         while (true) {
@@ -421,6 +580,7 @@ public class RegularUserOperations {
                 { "Change", InformationTables.money(amountPaid.subtract(booking.totalPrice())) },
                 { "Status", booking.status().toString() }
         });
+        InformationTables.passengers(booking);
     }
 
 }
