@@ -182,8 +182,27 @@ public final class FlightStorage {
         List<Flight> flights = loadFlights();
         for (int i = 0; i < flights.size(); i++) {
             if (Validator.normalizeFlightNumber(flights.get(i).getFlightNumber()).equals(target)) {
+                BookingStorage bookings = BookingStorage.getInstance();
+                if (updated.getStatus() == FlightStatus.CANCELLED) {
+                    // Validate booking data before changing the flight file.
+                    bookings.loadBookings();
+                }
+                Flight original = flights.get(i);
                 flights.set(i, updated);
                 saveAllFlights(flights);
+                if (updated.getStatus() == FlightStatus.CANCELLED) {
+                    try {
+                        bookings.cancelBookingsForFlight(updated.getFlightNumber());
+                    } catch (IOException e) {
+                        flights.set(i, original);
+                        try {
+                            saveAllFlights(flights);
+                        } catch (IOException rollbackError) {
+                            e.addSuppressed(rollbackError);
+                        }
+                        throw e;
+                    }
+                }
                 return true;
             }
         }

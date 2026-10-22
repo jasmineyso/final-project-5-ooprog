@@ -96,8 +96,7 @@ public class BookingStorage {
                     bookings.add(booking);
 
                 } catch (IllegalArgumentException e) {
-                    throw new IOException(
-                            "Invalid booking data on line " + lineNumber
+                    throw new IOException("Invalid booking data on line " + lineNumber
                                     + ". Fix this record before saving; no bookings were changed.", e);
                 }
             }
@@ -107,6 +106,10 @@ public class BookingStorage {
     }
 
     private BookingStatus parseStatus(String text) {
+        // The simulation now considers refunds complete immediately on cancellation.
+        if ("CANCELLED_REFUND_PENDING".equalsIgnoreCase(text)) {
+            return BookingStatus.CANCELLED_REFUNDED;
+        }
         // Older versions used CONFIRMED for bookings that have been paid.
         if ("CONFIRMED".equalsIgnoreCase(text)) {
             return BookingStatus.PAID;
@@ -199,7 +202,7 @@ public class BookingStorage {
         if (!booking.isActive()) return;
         Flight flight = FlightStorage.getInstance().findFlight(booking.flightNumber());
         if (flight == null || !flight.isBookable()) {
-            throw new IOException("The flight is no longer available.");
+            throw new IOException("The flight is unavailable, cancelled or has already departed.");
         }
         for (String seat : booking.seats()) {
             int number;
@@ -291,7 +294,7 @@ public class BookingStorage {
             throw new IllegalArgumentException("Flight not found: " + newFlightNumber);
         }
         if (!target.isBookable()) {
-            throw new IllegalStateException("Cannot move a booking to a cancelled flight.");
+            throw new IllegalStateException("Cannot move a booking to a cancelled or departed flight.");
         }
         if (target.getFlightNumber().equalsIgnoreCase(current.flightNumber())) {
             throw new IllegalArgumentException("Choose a different flight.");
@@ -310,7 +313,7 @@ public class BookingStorage {
         if (current == null || !current.isActive()) {
             return false;
         }
-        return updateBooking(current.withStatus(BookingStatus.CANCELLED));
+        return updateBooking(current.cancelled());
     }
 
     /** Returns whether a flight has any booking that has not been cancelled. */
@@ -347,7 +350,7 @@ public class BookingStorage {
 
             if (booking.isActive() && condition.test(booking)) {
 
-                bookings.set(i, booking.withStatus(BookingStatus.CANCELLED));
+                bookings.set(i, booking.cancelled());
                 cancelled++;
             }
         }
@@ -485,7 +488,9 @@ public class BookingStorage {
             ServiceClass serviceClass,
             int count)
             throws IOException, NotEnoughSeatsException {
-
+        if (!flight.isBookable()) {
+            throw new IOException("Cannot assign seats on a cancelled or departed flight.");
+        }
         List<String> available = availableSeats(flight, serviceClass);
 
         if (available.size() < count) {

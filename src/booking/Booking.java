@@ -91,7 +91,18 @@ public final class Booking {
     }
 
     public boolean isActive() {
-        return status != BookingStatus.CANCELLED && status != BookingStatus.COMPLETED;
+        return status == BookingStatus.PENDING || status == BookingStatus.PAID;
+    }
+
+    public boolean isCancelled() {
+        return status == BookingStatus.CANCELLED || status == BookingStatus.CANCELLED_REFUNDED;
+    }
+
+    /** Simulates an immediate full refund when a paid booking is cancelled. */
+    public Booking cancelled() {
+        if (!isActive()) return this;
+        return withStatus(status == BookingStatus.PAID
+                ? BookingStatus.CANCELLED_REFUNDED : BookingStatus.CANCELLED);
     }
 
     @Override

@@ -5,6 +5,7 @@ public enum BookingStatus {
     PENDING("Pending"),
     PAID("Paid / Booked"),
     CANCELLED("Cancelled"),
+    CANCELLED_REFUNDED("Cancelled / Refunded"),
     COMPLETED("Completed");
 
     /** Compatibility name used by the attached version of this enum. */

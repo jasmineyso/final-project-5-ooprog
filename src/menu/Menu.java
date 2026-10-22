@@ -28,6 +28,14 @@ public class Menu {
 
     /** First screen of the program: pick Admin or Regular User. */
     public void welcomePage() {
+        try {
+            runWelcomePage();
+        } catch (Input.EndOfInputException e) {
+            System.out.println("Input ended. Goodbye!");
+        }
+    }
+
+    private void runWelcomePage() {
         System.out.println("Welcome to the ___ Airline!");
 
         boolean running = true;
@@ -42,7 +50,7 @@ public class Menu {
                 case 2 -> regularUserPage();
                 case 3 -> {
                     System.out.print("Are you sure you want to exit? (y/n): ");
-                    String confirm = sc.nextLine().trim();
+                    String confirm = Input.readLine().trim();
                     if (confirm.equalsIgnoreCase("y")) {
                         System.out.println("Thank you for using the ___ Airline. Goodbye!");
                         running = false;
@@ -68,7 +76,7 @@ public class Menu {
                 case 2 -> login.loginRegularUser();
                 case 3 -> {
                     System.out.print("Are you sure you want to go back? (y/n): ");
-                    String confirm = sc.nextLine().trim();
+                    String confirm = Input.readLine().trim();
                     if (confirm.equalsIgnoreCase("y")) {
                         running = false;
                     }

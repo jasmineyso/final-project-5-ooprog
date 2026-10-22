@@ -10,7 +10,6 @@ import src.booking.BookingStatus;
 import src.booking.BookingStorage;
 import src.booking.exception.NotEnoughSeatsException;
 import src.flight.Flight;
-import src.flight.FlightStatus;
 import src.flight.ServiceClass;
 
 /** Assigns available seats and prepares a booking for the payment choice. */
@@ -29,8 +28,8 @@ public class FlightSeatAssign {
     }
 
     public List<String> assignSeats() throws IOException, NotEnoughSeatsException {
-        if (flight.getStatus() == FlightStatus.CANCELLED) {
-            throw new IOException("This flight is cancelled.");
+        if (!flight.isBookable()) {
+            throw new IOException("This flight is cancelled or has already departed.");
         }
 
         return BookingStorage.getInstance().assignSeats(flight, serviceClass, numberOfSeats);

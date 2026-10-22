@@ -4,7 +4,8 @@ package src.flight;
 public enum FlightStatus {
     SCHEDULED("Scheduled"),
     DELAYED("Delayed"),
-    CANCELLED("Cancelled");
+    CANCELLED("Cancelled"),
+    DEPARTED("Departed");
 
     /** Compatibility name used by the attached version of this enum. */
     public static final FlightStatus ON_TIME = SCHEDULED;
@@ -18,6 +19,6 @@ public enum FlightStatus {
     /** The readable name, e.g. "Delayed" instead of DELAYED. */
     @Override
     public String toString() {
-        return label;
+        return label; 
     }
 }

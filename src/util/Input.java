@@ -16,8 +16,22 @@ public final class Input {
         return instance;
     }
 
+    /** Signals closed input so a menu can exit without saving an unfinished action. */
+    public static final class EndOfInputException extends RuntimeException {
+        private EndOfInputException() {
+            super("Input has ended.");
+        }
+    }
+
+    public static String readLine() {
+        Scanner scanner = getScanner();
+        if (!scanner.hasNextLine()) {
+            throw new EndOfInputException();
+        }
+        return scanner.nextLine();
+    }
+
     public static int askChoice(String title, String... options) {
-        Scanner sc = getScanner();
         boolean isChoiceValid = false;
         int choice = 0;
         while (!isChoiceValid) {
@@ -27,7 +41,7 @@ public final class Input {
                 System.out.println("[" + (i + 1) + "] " + options[i]);
             }
             System.out.print("Enter your choice: ");
-            String input = sc.nextLine();
+            String input = readLine();
 
             if (Validator.isIntInRange(input, 1, options.length)) {
                 choice = Integer.parseInt(input.trim());
@@ -41,12 +55,11 @@ public final class Input {
 
     /** Asks a yes/no question until the user types Y or N. Returns true for Y. */
     public static boolean askYesNo(String question) {
-        Scanner sc = getScanner();
         boolean isAnswerValid = false;
         boolean answer = false;
         while (!isAnswerValid) {
             Display.prompt(question + " (Y/N)");
-            String input = sc.nextLine().trim();
+            String input = readLine().trim();
 
             if (input.equalsIgnoreCase("Y")) {
                 answer = true;

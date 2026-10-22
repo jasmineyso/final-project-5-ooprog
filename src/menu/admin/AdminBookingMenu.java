@@ -11,7 +11,6 @@ import src.booking.BookingStatus;
 import src.booking.BookingStorage;
 import src.booking.exception.NotEnoughSeatsException;
 import src.flight.Flight;
-import src.flight.FlightStatus;
 import src.flight.FlightStorage;
 import src.flight.ServiceClass;
 import src.util.Display;
@@ -137,7 +136,7 @@ public class AdminBookingMenu {
                 return;
             }
             InformationTables.bookings(List.of(booking));
-            if (booking.status() == BookingStatus.CANCELLED) {
+            if (booking.isCancelled()) {
                 Display.error("This booking is already cancelled.");
                 return;
             }
@@ -156,14 +155,14 @@ public class AdminBookingMenu {
         }
     }
 
-    /** Only Pending bookings on flights that aren't cancelled can change class. */
+    /** Only Pending bookings on flights that have not departed can change class. */
     private void changeServiceClass(Booking booking) throws IOException {
         if (booking.status() != BookingStatus.PENDING) {
             Display.error("Only Pending bookings can be changed. Paid bookings must be cancelled instead.");
             return;
         }
         Flight flight = FlightStorage.getInstance().findFlight(booking.flightNumber());
-        if (flight == null || flight.getStatus() == FlightStatus.CANCELLED) {
+        if (flight == null || !flight.isBookable()) {
             Display.error("Flight " + booking.flightNumber() + " is no longer available.");
             return;
         }
@@ -195,10 +194,13 @@ public class AdminBookingMenu {
             Display.message("Booking not changed.");
             return;
         }
-        BookingStorage.getInstance().updateBooking(booking.withStatus(BookingStatus.CANCELLED));
+        if (!BookingStorage.getInstance().cancelBooking(booking.bookingId())) {
+            Display.error("Booking was not found or is no longer active.");
+            return;
+        }
         Display.success("Booking " + booking.bookingId() + " has been cancelled. Its seats are free again.");
         if (booking.status() == BookingStatus.PAID) {
-            Display.message("This booking was paid. Refund PHP " + booking.totalPrice().toPlainString()
+            Display.message("Automatically refunded " + InformationTables.money(booking.totalPrice())
                     + " to the passenger.");
         }
     }
