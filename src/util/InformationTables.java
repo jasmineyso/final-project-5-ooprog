@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import src.account.RegularUser;
 import src.booking.Booking;
 import src.flight.Flight;
+import src.flight.ServiceClass;
 import src.menu.regular_user.PassengerSeat;
 
 /** Shared columns and formatting for information shown by both user roles. */
@@ -15,23 +16,32 @@ public class InformationTables {
     }
 
     public static String money(BigDecimal amount) {
-        return String.format(java.util.Locale.US, "PHP %,.2f", amount);
+        return Display.money(amount);
     }
 
+    /** Short table for lists of flights. */
     public static void flights(List<Flight> flights) {
-        String[] headers = { "Flight Number", "Gate", "Origin", "Destination", "Departure", "Arrival",
-                "Status", "Economy Fare", "Premium Economy Fare", "Business Fare", "First Class Fare", "Seats" };
+        String[] headers = { "Flight", "From", "To", "Departure", "Arrival", "Status" };
         String[][] rows = new String[flights.size()][];
         for (int i = 0; i < flights.size(); i++) {
             Flight flight = flights.get(i);
-            rows[i] = new String[] { flight.getFlightNumber(), flight.getGateNumber(), flight.getOrigin(),
-                    flight.getDestination(), Validator.formatDateTime(flight.getDepartureTime()),
-                    Validator.formatDateTime(flight.getArrivalTime()), flight.getStatus().toString(),
-                    money(flight.getEconomyFare()), money(flight.getPremiumEconomyFare()),
-                    money(flight.getBusinessFare()), money(flight.getFirstClassFare()),
-                    Integer.toString(flight.getTotalSeats()) };
+            rows[i] = new String[] { flight.getFlightNumber(), flight.getOrigin(), flight.getDestination(),
+                    Validator.formatDateTime(flight.getDepartureTime()),
+                    Validator.formatDateTime(flight.getArrivalTime()), flight.getStatus().toString() };
         }
         Display.table(headers, rows);
+    }
+
+    /** Everything about one flight, including the fare for each class. */
+    public static void flightDetails(Flight flight) {
+        Display.detail("Flight", flight.getFlightNumber() + "  (Gate " + flight.getGateNumber() + ")");
+        Display.detail("Route", flight.getOrigin() + " -> " + flight.getDestination());
+        Display.detail("Departure", Validator.formatDateTime(flight.getDepartureTime()));
+        Display.detail("Arrival", Validator.formatDateTime(flight.getArrivalTime()));
+        Display.detail("Status", flight.getStatus().toString());
+        for (ServiceClass serviceClass : ServiceClass.values()) {
+            Display.detail(serviceClass.toString(), money(flight.getFareFor(serviceClass)));
+        }
     }
 
     public static void bookings(List<Booking> bookings) {
@@ -67,4 +77,6 @@ public class InformationTables {
         }
         Display.table(new String[] { "Username", "Email", "Phone Number", "Address" }, rows);
     }
+
+    
 }

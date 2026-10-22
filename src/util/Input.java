@@ -36,10 +36,12 @@ public final class Input {
         int choice = 0;
         while (!isChoiceValid) {
             System.out.println();
-            System.out.println("=== " + title + " ===");
+            Display.subTitle(title);
             for (int i = 0; i < options.length; i++) {
                 System.out.println("[" + (i + 1) + "] " + options[i]);
             }
+
+            Display.divider();
             System.out.print("Enter your choice: ");
             String input = readLine();
 
@@ -58,6 +60,7 @@ public final class Input {
         boolean isAnswerValid = false;
         boolean answer = false;
         while (!isAnswerValid) {
+            Display.divider();
             Display.prompt(question + " (Y/N)");
             String input = readLine().trim();
 
@@ -71,5 +74,12 @@ public final class Input {
             }
         }
         return answer;
+    }
+
+    /** Waits until the user presses Enter, so results don't scroll away. */
+    public static void pause() {
+        Display.message("");
+        Display.prompt("Press Enter to continue...");
+        getScanner().nextLine();
     }
 }

@@ -8,7 +8,7 @@ public enum BookingStatus {
     CANCELLED_REFUNDED("Cancelled / Refunded"),
     COMPLETED("Completed");
 
-    /** Compatibility name used by the attached version of this enum. */
+    // compatibility name used by the attached version of this enum
     public static final BookingStatus CONFIRMED = PAID;
 
     private final String label;

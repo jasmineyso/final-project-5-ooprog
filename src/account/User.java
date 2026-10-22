@@ -13,7 +13,7 @@ public abstract class User {
         return username;
     }
 
-    // Accessible inside the src package for saving accounts.
+    // accessible inside the src package for saving accounts
     public String getPassword() {
         return password;
     }

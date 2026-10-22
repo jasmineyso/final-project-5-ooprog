@@ -93,6 +93,66 @@ public final class Validator {
         return input.trim().replaceAll("\\s+", " ");
     }
 
+    // ===================== CITY, COUNTRY =====================
+
+    /**
+     * Origin and destination are written as "City, Country".
+     * Accepts: "Manila, Philippines", "Cagayan de Oro, Philippines", "Tokyo,Japan", "Ho Chi Minh, Vietnam"
+     * Rejects: "Manila" (no country), "Manila, ", "Manila, Philippines, Asia", "Manila1, Philippines"
+     */
+    public static boolean isValidCityCountry(String input) {
+        if (input == null) {
+            return false;
+        }
+        String[] parts = input.split(",", -1);
+        return parts.length == 2 && isValidLocation(parts[0]) && isValidLocation(parts[1]);
+    }
+
+    /**
+     * Cleans spacing and capital letters: "  manila ,philippines " -> "Manila, Philippines".
+     * Use only after isValidCityCountry.
+     */
+    public static String normalizeCityCountry(String input) {
+        String[] parts = input.split(",", -1);
+        return capitalizeWords(normalizeLocation(parts[0])) + ", " + capitalizeWords(normalizeLocation(parts[1]));
+    }
+
+    // Small words that stay lowercase inside a place name: "Cagayan de Oro", "San Jose del Monte".
+    private static final java.util.Set<String> SMALL_WORDS = java.util.Set.of("de", "del", "la", "of", "and");
+
+    /** "cagayan de oro" -> "Cagayan de Oro", "new york" -> "New York". */
+    private static String capitalizeWords(String text) {
+        String[] words = text.split(" ");
+        for (int i = 0; i < words.length; i++) {
+            String word = words[i];
+            boolean keepSmall = i > 0 && SMALL_WORDS.contains(word.toLowerCase());
+            if (keepSmall) {
+                words[i] = word.toLowerCase();
+            } else if (!word.isEmpty()) {
+                words[i] = Character.toUpperCase(word.charAt(0)) + word.substring(1);
+            }
+        }
+        return String.join(" ", words);
+    }
+
+    /**
+     * For searching: does a saved location like "Manila, Philippines" match what the user typed?
+     * Matches the full "City, Country", just the city ("manila"), or just the country ("philippines").
+     * Capital letters and extra spaces are ignored.
+     */
+    public static boolean locationMatches(String savedLocation, String search) {
+        String target = isValidCityCountry(search) ? normalizeCityCountry(search) : normalizeLocation(search);
+        if (normalizeLocation(savedLocation).equalsIgnoreCase(target)) {
+            return true;
+        }
+        for (String part : savedLocation.split(",")) {
+            if (normalizeLocation(part).equalsIgnoreCase(target)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // ===================== DEPARTURE / ARRIVAL TIME =====================
 
     /** Show this in prompts so users know the expected format. */

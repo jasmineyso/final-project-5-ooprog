@@ -20,7 +20,7 @@ public final class FlightStorage {
     private final Path filePath;
 
     private FlightStorage() {
-        // Support launching from either the project or its parent workspace.
+        // support launching from either the project or its parent workspace
         Path directory = Path.of("src", "files");
         Path workspaceDirectory = Path.of("final-project-5-ooprog", "src", "files");
         if (Files.isDirectory(workspaceDirectory)) {
@@ -103,7 +103,7 @@ public final class FlightStorage {
     }
 
     private FlightStatus parseStatus(String text) {
-        // Older versions called a scheduled flight ON_TIME.
+        // older versions called a scheduled flight ON_TIME
         if ("ON_TIME".equalsIgnoreCase(text)) {
             return FlightStatus.SCHEDULED;
         }
@@ -123,7 +123,7 @@ public final class FlightStorage {
         return numbers;
     }
 
-    /** Returns the flight with this number, or null if there is none. */
+    // returns the flight with this number, or null if there is none
     public Flight findFlight(String flightNumber) throws IOException {
         String target = Validator.normalizeFlightNumber(flightNumber);
         for (Flight flight : loadFlights()) {
@@ -145,7 +145,7 @@ public final class FlightStorage {
         return results;
     }
 
-    /** Adds ONE flight to the end of the file. */
+    // adds one flight to the end of the file
     public void saveFlight(Flight flight) throws IOException {
         if (Validator.flightNumberExists(flight.getFlightNumber(), loadFlightNumbers())) {
             throw new IOException("Flight number already exists.");
@@ -209,7 +209,7 @@ public final class FlightStorage {
         return false;
     }
 
-    /** Updates a flight's departure and arrival times. */
+    // updates a flight's departure and arrival times
     public boolean updateFlightSchedule(String flightNumber, LocalDateTime newDeparture,
             LocalDateTime newArrival) throws IOException {
         if (newDeparture == null || newArrival == null || !newArrival.isAfter(newDeparture)) {
@@ -222,30 +222,7 @@ public final class FlightStorage {
         return updateFlight(current.withTimes(newDeparture, newArrival));
     }
 
-    /** Updates the fare for one service class. */
-    public boolean updateFlightFare(String flightNumber, ServiceClass serviceClass,
-            BigDecimal newFare) throws IOException {
-        if (serviceClass == null || newFare == null || newFare.signum() < 0) {
-            throw new IllegalArgumentException("Service class is required and fare cannot be negative.");
-        }
-        Flight current = findFlight(flightNumber);
-        if (current == null) {
-            return false;
-        }
-        BigDecimal economy = current.getEconomyFare();
-        BigDecimal premium = current.getPremiumEconomyFare();
-        BigDecimal business = current.getBusinessFare();
-        BigDecimal first = current.getFirstClassFare();
-        switch (serviceClass) {
-            case ECONOMY -> economy = newFare;
-            case PREMIUM_ECONOMY -> premium = newFare;
-            case BUSINESS -> business = newFare;
-            case FIRST_CLASS -> first = newFare;
-        }
-        return updateFlight(current.withFares(economy, premium, business, first));
-    }
-
-    /** Updates a flight's status. */
+    // updates a flight's status
     public boolean updateFlightStatus(String flightNumber, FlightStatus newStatus) throws IOException {
         if (newStatus == null) {
             throw new IllegalArgumentException("Flight status cannot be null.");
@@ -257,7 +234,7 @@ public final class FlightStorage {
         return updateFlight(current.withStatus(newStatus));
     }
 
-    /** Deletes a flight only when it has no active bookings. */
+    // deletes a flight only when it has no active bookings
     public boolean deleteFlight(String flightNumber, BookingStorage bookings) throws IOException {
         if (bookings == null) {
             throw new IllegalArgumentException("Booking storage cannot be null.");
@@ -272,7 +249,7 @@ public final class FlightStorage {
         return removeFlight(current.getFlightNumber());
     }
 
-    /** Removes the flight with this number. Returns false if it wasn't found. */
+    // removes the flight with this number. returns false if it wasn't found
     public boolean removeFlight(String flightNumber) throws IOException {
         String target = Validator.normalizeFlightNumber(flightNumber);
         List<Flight> flights = loadFlights();

@@ -23,7 +23,7 @@ public class AccountStorage {
     }
 
     private AccountStorage() {
-        // Support launching from either the project or its parent workspace.
+        // support launching from either the project or its parent workspace.
         Path directory = Path.of("src", "files");
         Path workspaceDirectory = Path.of("final-project-5-ooprog", "src", "files");
         if (Files.isDirectory(workspaceDirectory)) {
@@ -44,7 +44,7 @@ public class AccountStorage {
         }
     }
 
-    /** Replaces the WHOLE user file with this list. Used when deleting a user. */
+    /**replaces the whole user file with this list. used when deleting a user. */
     public void saveAllUsers(List<RegularUser> users) throws IOException {
         List<String> lines = new ArrayList<>();
         for (RegularUser user : users) {
@@ -56,7 +56,7 @@ public class AccountStorage {
     }
 
     /**
-     * Returns the user with exactly this username (ignores capital letters), or
+     * returns the user with this exact username (ignores capital letters), or
      * null.
      */
     public RegularUser findUser(String username) throws IOException {
@@ -69,7 +69,7 @@ public class AccountStorage {
     }
 
     /**
-     * Deletes the user with this username. Returns false if no such user exists.
+     * deletes the user with this username. returns false if no such user exists.
      */
     public boolean deleteUser(String username) throws IOException {
         List<RegularUser> users = loadUsers();
@@ -80,7 +80,7 @@ public class AccountStorage {
         return removed;
     }
 
-    /** One line per account: username|password|email|phoneNumber|address. */
+    /** one line per account: username|password|email|phoneNumber|address. */
     private String toLine(RegularUser user) throws IOException {
         if (user == null) {
             throw new IOException("Cannot save a null user.");
@@ -96,7 +96,7 @@ public class AccountStorage {
             if (details[i].contains("\n") || details[i].contains("\r")) {
                 throw new IOException("Account fields must stay on one line.");
             }
-            // Escape the separator so a field containing | still loads correctly.
+            // escape the separator so a field containing | still loads correctly.
             details[i] = details[i].replace("%", "%25").replace("|", "%7C");
         }
         return String.join("|", details);

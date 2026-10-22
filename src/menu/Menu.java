@@ -8,6 +8,7 @@ import src.account.AccountStorage;
 import src.account.RegularUser;
 import src.core.ErrorMessages;
 import src.util.Input;
+import src.util.Display;
 
 public class Menu {
 
@@ -36,7 +37,7 @@ public class Menu {
     }
 
     private void runWelcomePage() {
-        System.out.println("Welcome to the ___ Airline!");
+        Display.title("Welcome to the Airline Booking System!");
 
         boolean running = true;
         while (running) {
@@ -52,17 +53,16 @@ public class Menu {
                     System.out.print("Are you sure you want to exit? (y/n): ");
                     String confirm = Input.readLine().trim();
                     if (confirm.equalsIgnoreCase("y")) {
-                        System.out.println("Thank you for using the ___ Airline. Goodbye!");
+                        Display.success("Thank you for using the ___ Airline. Goodbye!");
                         running = false;
                     } else {
-                        System.out.println("Exit cancelled.");
+                        Display.error("Exit cancelled.");
                     }
                 }
             }
         }
     }
 
-    /** Regular User screen: sign up, log in, or go back to the first screen. */
     private void regularUserPage() {
         boolean running = true;
         while (running) {

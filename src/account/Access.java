@@ -1,12 +1,12 @@
 package src.account;
 
-/** Authorization checks for the project's Admin and RegularUser accounts. */
+// authorization checks for the project's Admin and RegularUser accounts
 public final class Access {
     private Access() {
         // Utility class.
     }
 
-    /** Throws when the actor is not an authenticated Admin account. */
+    // throws when the actor is not an authenticated Admin account
     public static void requireAdmin(User actor) {
         if (!(actor instanceof Admin)) {
             throw new SecurityException("Admin access required.");

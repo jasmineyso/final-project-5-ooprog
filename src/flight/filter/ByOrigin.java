@@ -7,11 +7,11 @@ public class ByOrigin implements FlightFilter {
     private final String origin;
 
     public ByOrigin(String origin) {
-        this.origin = Validator.normalizeLocation(origin);
+        this.origin = origin;
     }
 
     @Override
     public boolean matches(Flight flight) {
-        return flight.getOrigin().equalsIgnoreCase(origin);
+        return Validator.locationMatches(flight.getOrigin(), origin);
     }
 }

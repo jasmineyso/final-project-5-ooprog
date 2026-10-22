@@ -31,8 +31,8 @@ public class LogIn {
             Display.error("Invalid username or password. Please try again.");
             return;
         }
-        System.out.printf("%nRole: %s%n", admin.getRole());
-        Display.message("Welcome, " + admin.getUsername() + "!");
+
+        Display.title("Welcome, " + admin.getUsername() + "!");
         UserInterface.getInstance().adminUI();
     }
 
@@ -93,8 +93,7 @@ public class LogIn {
                 return;
             }
 
-            System.out.printf("%nRole: %s%n", user.getRole());
-            Display.message("Login successful! Welcome, " + user.getUsername() + "!");
+            Display.title("Welcome, " + user.getUsername() + "!");
             UserInterface.getInstance().userUI(user);
         } catch (IOException e) {
             Display.error(ErrorMessages.LOAD_FAILED + e.getMessage());

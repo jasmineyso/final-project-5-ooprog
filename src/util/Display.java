@@ -1,62 +1,41 @@
 package src.util;
 
+import java.math.BigDecimal;
+import java.util.List;
+
+/**
+ * Everything that gets printed to the screen goes through here,
+ * so the look of the whole program can be changed in one place.
+ */
 public final class Display {
+
+    private static final int WIDTH = 60;
 
     private Display() {
     }
 
-    /** Prints a bordered table, sizing each column to its longest header or value. */
-    public static void table(String[] headers, String[][] rows) {
-        if (headers.length == 0) {
-            throw new IllegalArgumentException("A table needs at least one column.");
-        }
-        String[][] cells = new String[rows.length + 1][headers.length];
-        int[] widths = new int[headers.length];
-        for (int row = 0; row < cells.length; row++) {
-            String[] values = row == 0 ? headers : rows[row - 1];
-            if (values.length != headers.length) {
-                throw new IllegalArgumentException("Every table row must match the header column count.");
-            }
-            for (int column = 0; column < headers.length; column++) {
-                // Keep a stored line break or tab from disrupting the table borders.
-                String value = values[column] == null ? "" : values[column].replaceAll("[\\r\\n\\t]", " ");
-                cells[row][column] = value;
-                widths[column] = Math.max(widths[column], value.length());
-            }
-        }
-        StringBuilder border = new StringBuilder("+");
-        for (int width : widths) {
-            border.append("-".repeat(width + 2)).append('+');
-        }
-        System.out.println(border);
-        for (int row = 0; row < cells.length; row++) {
-            StringBuilder line = new StringBuilder("|");
-            for (int column = 0; column < headers.length; column++) {
-                String value = cells[row][column];
-                line.append(' ').append(value)
-                        .append(" ".repeat(widths[column] - value.length())).append(" |");
-            }
-            System.out.println(line);
-            if (row == 0) {
-                System.out.println(border);
-            }
-        }
-        if (rows.length > 0) {
-            System.out.println(border);
-        }
-    }
-
-    /** Blank line, then a heading:  === Admin Menu === */
+    /** Boxed, centered heading. */
     public static void title(String title) {
         System.out.println();
-        System.out.println("=== " + title + " ===");
+        System.out.println("=".repeat(WIDTH));
+        int pad = (WIDTH - title.length()) / 2;
+        System.out.println(" ".repeat(Math.max(0, pad)) + title.toUpperCase());
+        System.out.println("=".repeat(WIDTH));
     }
 
-    /** Numbered list:  [1] Add Flight  [2] Update Flight ... */
+    public static void subTitle(String title) {
+        System.out.println("-".repeat(WIDTH));
+        int pad = (WIDTH - title.length()) / 2;
+        System.out.println(" ".repeat(Math.max(0, pad)) + title.toUpperCase());
+        System.out.println("-".repeat(WIDTH));
+    }
+
+    /** Indented numbered options with a line under them. */
     public static void options(String... options) {
         for (int i = 0; i < options.length; i++) {
-            System.out.println("[" + (i + 1) + "] " + options[i]);
+            System.out.printf("  [%d] %s%n", i + 1, options[i]);
         }
+        System.out.println("-".repeat(WIDTH));
     }
 
     /** Text before the user types, on the same line:  Enter your choice: */
@@ -69,18 +48,54 @@ public final class Display {
         System.out.println(text);
     }
 
-    /** Something went wrong (invalid input, not found, failed to save...). */
-    public static void error(String text) {
-        System.out.println(text);
-    }
-
-    /** Something worked (account created, flight added...). */
-    public static void success(String text) {
-        System.out.println(text);
-    }
-
     /** A line to separate sections. */
     public static void divider() {
-        System.out.println("----------------------------------------");
+        System.out.println("-".repeat(WIDTH));
+    }
+
+    /** Prints rows in aligned columns. Each column is as wide as its longest value. */
+    public static void table(String[] headers, List<String[]> rows) {
+        System.out.println();
+        int[] widths = new int[headers.length];
+        for (int i = 0; i < headers.length; i++) {
+            widths[i] = headers[i].length();
+        }
+        for (String[] row : rows) {
+            for (int i = 0; i < row.length; i++) {
+                widths[i] = Math.max(widths[i], row[i].length());
+            }
+        }
+        StringBuilder format = new StringBuilder();
+        int total = 0;
+        for (int width : widths) {
+            format.append("%-").append(width).append("s  ");
+            total += width + 2;
+        }
+        System.out.println(String.format(format.toString(), (Object[]) headers).stripTrailing());
+        System.out.println("-".repeat(total - 2));
+        for (String[] row : rows) {
+            System.out.println(String.format(format.toString(), (Object[]) row).stripTrailing());
+        }
+    }
+
+    public static void table(String[] headers, String[][] rows) {
+        table(headers, java.util.Arrays.asList(rows));
+    }
+
+    /** One aligned "Label : value" line. */
+    public static void detail(String label, String value) {
+        System.out.printf("  %-16s: %s%n", label, value);
+    }
+
+    public static String money(BigDecimal amount) {
+        return String.format(java.util.Locale.US, "PHP %,.2f", amount);
+    }
+
+    public static void error(String text) {
+        System.out.println("[ERROR] " + text);
+    }
+
+    public static void success(String text) {
+        System.out.println("[OK] " + text);
     }
 }

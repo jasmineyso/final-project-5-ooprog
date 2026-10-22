@@ -53,7 +53,7 @@ public class AdminFlightMenu {
     protected String[] getOptions() {
         return new String[] {
                 "Add Flight",
-                "Update Flight (times, fares)",
+                "Update Flight Time",
                 "Update Flight Status",
                 "Remove Flight",
                 "Search Flights",
@@ -78,8 +78,7 @@ public class AdminFlightMenu {
     }
 
     public void addFlight() {
-        System.out.println();
-        System.out.println("=== Add Flight ===");
+        Display.title("Add Flight");
         FlightStorage storage = FlightStorage.getInstance();
         try {
             List<String> existingNumbers = storage.loadFlightNumbers();
@@ -90,11 +89,12 @@ public class AdminFlightMenu {
             String gateNumber = askField("Gate Number (e.g. 12 or A12)",
                     value -> value.matches("[A-Za-z0-9]{1,10}"),
                     "Gate number must contain 1 to 10 letters or digits.").toUpperCase(Locale.ROOT);
-            String origin = Validator.normalizeLocation(askField("Origin", Validator::isValidLocation,
-                    "Enter a valid origin (e.g. Manila)."));
-            String destination = Validator.normalizeLocation(askField("Destination",
-                    value -> Validator.isValidLocation(value) && Validator.isDifferentLocation(origin, value),
-                    "Enter a valid destination different from the origin."));
+            String origin = Validator.normalizeCityCountry(askField("Origin (City, Country)",
+                    Validator::isValidCityCountry,
+                    "Enter the origin as City, Country (e.g. Manila, Philippines)."));
+            String destination = Validator.normalizeCityCountry(askField("Destination (City, Country)",
+                    value -> Validator.isValidCityCountry(value) && Validator.isDifferentLocation(origin, value),
+                    "Enter the destination as City, Country (e.g. Tokyo, Japan), different from the origin."));
             LocalDateTime departure = askDeparture();
             LocalDateTime arrival = askArrival(departure);
             BigDecimal economyFare = askFare("Economy");
@@ -107,9 +107,9 @@ public class AdminFlightMenu {
                     economyFare, premiumEconomyFare, businessFare, firstClassFare,
                     ServiceClass.ECONOMY.seatsPerFlight(), ServiceClass.PREMIUM_ECONOMY.seatsPerFlight(),
                     ServiceClass.BUSINESS.seatsPerFlight(), ServiceClass.FIRST_CLASS.seatsPerFlight()));
-            System.out.println("Flight " + flightNumber + " added and saved to AVAILABLE_FLIGHTS.txt.");
+            Display.success("Flight " + flightNumber + " has been added.");
         } catch (IOException e) {
-            System.out.println("Could not add flight: " + e.getMessage());
+            Display.error("Could not add flight: " + e.getMessage());
         }
     }
 
@@ -117,12 +117,12 @@ public class AdminFlightMenu {
         boolean isFieldValid = false;
         String value = "";
         while (!isFieldValid) {
-            System.out.print(prompt + ": ");
+            Display.prompt(prompt);
             value = Input.getScanner().nextLine().trim();
             if (validation.test(value)) {
                 isFieldValid = true;
             } else {
-                System.out.println(error);
+                Display.error(error);
             }
         }
         return value;
@@ -140,6 +140,7 @@ public class AdminFlightMenu {
         Display.title("Update Flight");
         try {
             Flight flight = askExistingFlight();
+            Display.divider();
             if (flight == null) {
                 return;
             }
@@ -147,59 +148,21 @@ public class AdminFlightMenu {
                 Display.error("Flight " + flight.getFlightNumber() + " is cancelled and can no longer be updated.");
                 return;
             }
-            InformationTables.flights(List.of(flight));
-
-            int field = Input.askChoice("What do you want to update?",
-                    "Departure and Arrival Time",
-                    "Fare per Service Class",
-                    "Back");
+            InformationTables.flightDetails(flight);
+            Display.divider();
 
             Flight updated;
-            switch (field) {
-                case 1 -> {
-                    LocalDateTime departure = askDeparture();
-                    LocalDateTime arrival = askArrival(departure);
-                    updated = flight.withTimes(departure, arrival);
-                }
-                case 2 -> updated = askNewFares(flight);
-                default -> {
-                    return; // Back
-                }
-            }
+            LocalDateTime departure = askLaterDeparture(flight.getDepartureTime());
+            LocalDateTime arrival = askArrival(departure);
+            updated = flight.withTimes(departure, arrival).withStatus(FlightStatus.DELAYED);
+
 
             FlightStorage.getInstance().updateFlight(updated);
             Display.success("Flight " + flight.getFlightNumber() + " has been updated.");
-            InformationTables.flights(List.of(updated));
+            InformationTables.flightDetails(updated);
         } catch (IOException e) {
             Display.error("Could not update flight: " + e.getMessage());
         }
-    }
-
-    /**
-     * Asks for a new fare for every service class.
-     * Pressing Enter without typing anything keeps the current fare.
-     */
-    private Flight askNewFares(Flight flight) {
-        Display.message("Press Enter to keep the current fare.");
-        BigDecimal economyFare = askUpdatedFare("Economy", flight.getEconomyFare());
-        BigDecimal premiumEconomyFare = askUpdatedFare("Premium Economy", flight.getPremiumEconomyFare());
-        BigDecimal businessFare = askUpdatedFare("Business", flight.getBusinessFare());
-        BigDecimal firstClassFare = askUpdatedFare("First Class", flight.getFirstClassFare());
-        return flight.withFares(economyFare, premiumEconomyFare, businessFare, firstClassFare);
-    }
-
-    private BigDecimal askUpdatedFare(String serviceClass, BigDecimal currentFare) {
-        String value = askField("Fare for " + serviceClass + " [" + currentFare.toPlainString() + "]",
-                input -> input.isEmpty() || isValidFare(input),
-                "Enter a positive fare with at most two decimal places (e.g. 1500.00).");
-        if (value.isEmpty()) {
-            return currentFare;
-        }
-        return new BigDecimal(value).setScale(2, RoundingMode.UNNECESSARY);
-    }
-
-    private boolean isValidFare(String input) {
-        return input.matches("[0-9]{1,10}(\\.[0-9]{1,2})?") && new BigDecimal(input).signum() > 0;
     }
 
     public void updateFlightStatus() {
@@ -209,7 +172,7 @@ public class AdminFlightMenu {
             if (flight == null) {
                 return;
             }
-            InformationTables.flights(List.of(flight));
+            InformationTables.flightDetails(flight);
 
             FlightStatus[] statuses = FlightStatus.values();
             String[] options = new String[statuses.length + 1];
@@ -228,7 +191,7 @@ public class AdminFlightMenu {
             switch (newStatus) {
                 case DELAYED -> {
                     Display.message("Enter the new schedule for this flight.");
-                    LocalDateTime departure = askDeparture();
+                    LocalDateTime departure = askLaterDeparture(flight.getDepartureTime());
                     LocalDateTime arrival = askArrival(departure);
                     updated = updated.withTimes(departure, arrival);
                 }
@@ -255,7 +218,7 @@ public class AdminFlightMenu {
                 return;
             }
             Display.success("Flight " + flight.getFlightNumber() + " is now " + newStatus + ".");
-            InformationTables.flights(List.of(updated));
+            InformationTables.flightDetails(updated);
 
             if (newStatus == FlightStatus.CANCELLED) {
                 Display.message(affectedBookings.size() + " booking(s) on this flight were cancelled.");
@@ -298,6 +261,14 @@ public class AdminFlightMenu {
                 "Departure must be in the future. Please enter it again.");
     }
 
+    /** For delays: the new departure must be later than the flight's current departure. */
+    private LocalDateTime askLaterDeparture(LocalDateTime currentDeparture) {
+        return askDateTime("New Departure", null,
+                newDeparture -> newDeparture.isAfter(currentDeparture),
+                "The new departure must be later than " + Validator.formatDateTime(currentDeparture)
+                        + ". Please enter it again.");
+    }
+
     /** Pressing Enter at the arrival date uses the same day as the departure. */
     private LocalDateTime askArrival(LocalDateTime departure) {
         return askDateTime("Arrival", departure.toLocalDate(),
@@ -316,8 +287,7 @@ public class AdminFlightMenu {
         boolean isDateTimeValid = false;
         LocalDateTime dateTime = null;
         while (!isDateTimeValid) {
-            String datePrompt = label + " Date (YYYY-MM-DD)"
-                    + (defaultDate == null ? "" : " [Enter = " + defaultDate + "]");
+            String datePrompt = label + " Date (YYYY-MM-DD)";
             String dateText = askField(datePrompt,
                     value -> (defaultDate != null && value.isEmpty()) || Validator.isValidDate(value),
                     "Enter a real date in the format YYYY-MM-DD (e.g. 2026-11-05).");
@@ -354,7 +324,7 @@ public class AdminFlightMenu {
                 return;
             }
 
-            InformationTables.flights(List.of(flight));
+            InformationTables.flightDetails(flight);
             if (!Input.askYesNo("Are you sure you want to remove this flight?")) {
                 Display.message("Remove cancelled.");
                 return;
@@ -394,22 +364,27 @@ public class AdminFlightMenu {
                 return;
             }
             Display.title("Search Result");
-            InformationTables.flights(List.of(flight));
+            InformationTables.flightDetails(flight);
         } catch (IOException e) {
             Display.error("Could not load flights: " + e.getMessage());
         }
     }
 
     private void searchByOrigin() {
-        String origin = askField("Enter origin", Validator::isValidLocation,
-                "Enter a valid place name (e.g. Manila).");
-        showSearchResults("Flights from " + Validator.normalizeLocation(origin), new ByOrigin(origin));
+        String origin = askField("Enter origin (city, country, or City, Country)", this::isSearchablePlace,
+                "Enter a place name (e.g. Manila, Philippines, or Manila, Philippines).");
+        showSearchResults("Flights from " + origin, new ByOrigin(origin));
     }
 
     private void searchByDestination() {
-        String destination = askField("Enter destination", Validator::isValidLocation,
-                "Enter a valid place name (e.g. Cebu).");
-        showSearchResults("Flights to " + Validator.normalizeLocation(destination), new ByDestination(destination));
+        String destination = askField("Enter destination (city, country, or City, Country)", this::isSearchablePlace,
+                "Enter a place name (e.g. Tokyo, Japan, or Tokyo, Japan).");
+        showSearchResults("Flights to " + destination, new ByDestination(destination));
+    }
+
+    /** A search can be just a city or country ("Manila"), or a full "City, Country". */
+    private boolean isSearchablePlace(String value) {
+        return Validator.isValidLocation(value) || Validator.isValidCityCountry(value);
     }
 
     private void searchByMonthYear() {
