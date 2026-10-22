@@ -75,9 +75,10 @@ public class Flight {
         return status;
     }
 
-    /** A flight can accept bookings unless it has been cancelled. */
+    /** Scheduled and delayed flights accept bookings only before departure. */
     public boolean isBookable() {
-        return status != FlightStatus.CANCELLED;
+        return (status == FlightStatus.SCHEDULED || status == FlightStatus.DELAYED)
+                && departureTime.isAfter(LocalDateTime.now());
     }
 
     public BigDecimal getEconomyFare() {

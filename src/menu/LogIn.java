@@ -20,8 +20,10 @@ public class LogIn {
     public void loginAdmin() {
         Display.title("Admin Log In");
         Display.prompt("Enter admin username");
+        if (!sc.hasNextLine()) return;
         String username = sc.nextLine().trim();
         Display.prompt("Enter admin password");
+        if (!sc.hasNextLine()) return;
         String password = sc.nextLine();
 
         Admin admin = findAdmin(username, password);
@@ -52,10 +54,37 @@ public class LogIn {
 
     public void loginRegularUser() {
         Display.title("Log In");
-        Display.prompt("Enter username");
-        String username = sc.nextLine().trim();
-        Display.prompt("Enter password");
-        String password = sc.nextLine();
+
+        boolean isValidUsername = false;
+
+        String username = "";
+        while(!isValidUsername){
+            Display.prompt("Enter username");
+            if (!sc.hasNextLine()) return;
+            username = sc.nextLine().trim();
+
+            if (username.isBlank() || username.isEmpty()){
+                System.out.println(ErrorMessages.INVALID_USERNAME);
+            } else {
+                isValidUsername = true;
+            }
+        }
+
+        boolean isValidPassword = false;
+
+        String password = "";
+
+        while(!isValidPassword){
+            Display.prompt("Enter password");
+            if (!sc.hasNextLine()) return;
+            password = sc.nextLine().trim();
+
+            if (password.isBlank() || password.isEmpty()){
+                System.out.println(ErrorMessages.INVALID_PASSWORD);
+            } else {
+                isValidPassword = true;
+            }
+        }
 
         try {
             RegularUser user = AccountStorage.getInstance().findUser(username);

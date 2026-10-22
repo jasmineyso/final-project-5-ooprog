@@ -8,11 +8,9 @@ import src.menu.regular_user.RegularUserOperations;
 import src.util.Display;
 import src.util.Input;
 
-import java.util.Scanner;
 
 public class UserInterface {
     private static UserInterface instance;
-    private final Scanner sc = Input.getScanner();
     private UserInterface() {}
     
 
@@ -24,6 +22,14 @@ public class UserInterface {
     }
 
     public void adminUI() {
+        try {
+            runAdminUI();
+        } catch (Input.EndOfInputException e) {
+            Display.message("Input ended. Logging out...");
+        }
+    }
+
+    private void runAdminUI() {
         boolean running = true;
         while (running) {
             int choice = Input.askChoice("Admin Menu",
@@ -38,7 +44,7 @@ public class UserInterface {
                 case 3 -> new AdminAccountMenu().start();
                 case 4 -> {
                     System.out.print("Are you sure you want to log out? (y/n): ");
-                    String confirm = sc.nextLine().trim();
+                    String confirm = Input.readLine().trim();
                     if (confirm.equalsIgnoreCase("y")) {
                         Display.message("Logging out...");
                         running = false;
@@ -52,6 +58,14 @@ public class UserInterface {
 
     /** The passenger's main menu. 'user' is whoever logged in; bookings will use it. */
     public void userUI(RegularUser user) {
+        try {
+            runUserUI(user);
+        } catch (Input.EndOfInputException e) {
+            Display.message("Input ended. Logging out...");
+        }
+    }
+
+    private void runUserUI(RegularUser user) {
         boolean running = true;
         while (running) {
             int choice = Input.askChoice("User Menu",
@@ -72,7 +86,7 @@ public class UserInterface {
                 case 6 -> RegularUserOperations.getInstance().cancelBookedFlight(user);
                 case 7 -> {
                     System.out.print("Are you sure you want to log out? (y/n): ");
-                    String confirm = sc.nextLine().trim();
+                    String confirm = Input.readLine().trim();
                     if (confirm.equalsIgnoreCase("y")) {
                         Display.message("Logging out...");
                         running = false;

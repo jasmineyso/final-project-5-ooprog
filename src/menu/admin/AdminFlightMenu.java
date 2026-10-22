@@ -14,6 +14,8 @@ import java.util.Locale;
 import java.util.function.Predicate;
 
 import src.booking.BookingStorage;
+import src.booking.Booking;
+import src.booking.BookingStatus;
 import src.flight.Flight;
 import src.flight.FlightStatus;
 import src.flight.FlightStorage;
@@ -231,22 +233,41 @@ public class AdminFlightMenu {
                     updated = updated.withTimes(departure, arrival);
                 }
                 case CANCELLED -> {
-                    Display.message("All bookings on this flight will also be cancelled.");
+                    Display.message("All active bookings on this flight will also be cancelled.");
+                    Display.message("Paid bookings will be automatically refunded in full.");
                     if (!Input.askYesNo("Cancel flight " + flight.getFlightNumber() + "?")) {
                         Display.message("Status not changed.");
                         return;
                     }
                 }
                 case SCHEDULED -> { } // nothing extra to ask
+                case DEPARTED -> {}
             }
 
-            FlightStorage.getInstance().updateFlight(updated);
+            List<Booking> affectedBookings = newStatus == FlightStatus.CANCELLED
+                    ? BookingStorage.getInstance().loadBookings().stream()
+                            .filter(booking -> booking.flightNumber().equalsIgnoreCase(flight.getFlightNumber())
+                                    && booking.isActive())
+                            .toList()
+                    : List.of();
+            if (!FlightStorage.getInstance().updateFlight(updated)) {
+                Display.error("Flight was not found. Status not changed.");
+                return;
+            }
             Display.success("Flight " + flight.getFlightNumber() + " is now " + newStatus + ".");
             InformationTables.flights(List.of(updated));
 
             if (newStatus == FlightStatus.CANCELLED) {
-                int cancelled = BookingStorage.getInstance().cancelBookingsForFlight(flight.getFlightNumber());
-                Display.message(cancelled + " booking(s) on this flight were cancelled.");
+                Display.message(affectedBookings.size() + " booking(s) on this flight were cancelled.");
+                BigDecimal refundTotal = BigDecimal.ZERO;
+                for (Booking booking : affectedBookings) {
+                    if (booking.status() == BookingStatus.PAID) {
+                        refundTotal = refundTotal.add(booking.totalPrice());
+                        Display.message("Refunded: " + booking.bookingId() + " (" + booking.username()
+                                + ") - " + InformationTables.money(booking.totalPrice()));
+                    }
+                }
+                Display.message("Total refunded for these cancellations: " + InformationTables.money(refundTotal));
             }
         } catch (IOException e) {
             Display.error("Could not update flight status: " + e.getMessage());
