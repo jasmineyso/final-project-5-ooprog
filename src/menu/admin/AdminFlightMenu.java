@@ -144,10 +144,23 @@ public class AdminFlightMenu {
             if (flight == null) {
                 return;
             }
+
+            for (Booking booking : BookingStorage.getInstance().loadBookings()){
+                if (booking.flightNumber().equalsIgnoreCase(flight.getFlightNumber()) 
+                    && booking.status() == BookingStatus.PAID){
+                    Display.error("Flight time cannot be updated because there are confirmed passenger bookings.");
+                    return;
+                }
+            }
+
             if (flight.getStatus() == FlightStatus.CANCELLED) {
                 Display.error("Flight " + flight.getFlightNumber() + " is cancelled and can no longer be updated.");
                 return;
+            } else if (flight.getStatus() == FlightStatus.DEPARTED){
+                Display.error("Flight " + flight.getFlightNumber() + " has departed and can no longer be updated.");
+                return;
             }
+
             InformationTables.flightDetails(flight);
             Display.divider();
 
@@ -156,8 +169,14 @@ public class AdminFlightMenu {
             LocalDateTime arrival = askArrival(departure);
             updated = flight.withTimes(departure, arrival).withStatus(FlightStatus.DELAYED);
 
-
-            FlightStorage.getInstance().updateFlight(updated);
+            if (!confirmScheduleChange(flight, updated)) {
+                Display.message("Schedule not changed.");
+                return;
+            }
+            if (!FlightStorage.getInstance().updateFlight(updated)) {
+                Display.error("Flight was not found. Schedule not changed.");
+                return;
+            }
             Display.success("Flight " + flight.getFlightNumber() + " has been updated.");
             InformationTables.flightDetails(updated);
         } catch (IOException e) {
@@ -176,6 +195,7 @@ public class AdminFlightMenu {
 
             FlightStatus[] statuses = FlightStatus.values();
             String[] options = new String[statuses.length + 1];
+
             for (int i = 0; i < statuses.length; i++) {
                 options[i] = statuses[i].toString();
             }
@@ -185,7 +205,24 @@ public class AdminFlightMenu {
             if (choice == options.length) {
                 return; // Back
             }
+
+
             FlightStatus newStatus = statuses[choice - 1];
+
+            if (flight.getStatus() == newStatus) {
+                Display.error("Flight is already " + newStatus + ".");
+                return;
+            }
+
+            if (flight.getStatus() == FlightStatus.DEPARTED
+                    || flight.getStatus() == FlightStatus.CANCELLED) {
+
+                Display.error(
+                    "Cannot update flight status. " +
+                    "Departed or cancelled flights cannot be modified."
+                );
+                return;
+            }
 
             Flight updated = flight.withStatus(newStatus);
             switch (newStatus) {
@@ -194,6 +231,10 @@ public class AdminFlightMenu {
                     LocalDateTime departure = askLaterDeparture(flight.getDepartureTime());
                     LocalDateTime arrival = askArrival(departure);
                     updated = updated.withTimes(departure, arrival);
+                    if (!confirmScheduleChange(flight, updated)) {
+                        Display.message("Schedule not changed.");
+                        return;
+                    }
                 }
                 case CANCELLED -> {
                     Display.message("All active bookings on this flight will also be cancelled.");
@@ -204,7 +245,20 @@ public class AdminFlightMenu {
                     }
                 }
                 case SCHEDULED -> { } // nothing extra to ask
-                case DEPARTED -> {}
+                case DEPARTED -> {
+                    long pendingCount = BookingStorage.getInstance().loadBookings().stream()
+                            .filter(booking -> booking.flightNumber().equalsIgnoreCase(flight.getFlightNumber())
+                                    && booking.status() == BookingStatus.PENDING)
+                            .count();
+                    if (pendingCount > 0) {
+                        Display.message(pendingCount + " PENDING booking(s) on this flight will automatically be marked as EXPIRED.");
+                        if (!Input.askYesNo("Depart flight " + flight.getFlightNumber()
+                                + " and expire its PENDING bookings?")) {
+                            Display.message("Status not changed.");
+                            return;
+                        }
+                    }
+                }
             }
 
             List<Booking> affectedBookings = newStatus == FlightStatus.CANCELLED
@@ -235,6 +289,31 @@ public class AdminFlightMenu {
         } catch (IOException e) {
             Display.error("Could not update flight status: " + e.getMessage());
         }
+    }
+
+    /** Shows the affected bookings and both schedules before any changes are saved. */
+    private boolean confirmScheduleChange(Flight original, Flight updated) throws IOException {
+        int pendingCount = 0;
+        int paidCount = 0;
+        for (Booking booking : BookingStorage.getInstance().loadBookings()) {
+            if (booking.flightNumber().equalsIgnoreCase(original.getFlightNumber())) {
+                if (booking.status() == BookingStatus.PENDING) {
+                    pendingCount++;
+                } else if (booking.status() == BookingStatus.PAID) {
+                    paidCount++;
+                }
+            }
+        }
+        Display.message("Flight " + original.getFlightNumber() + " has "
+                + (pendingCount + paidCount) + " active booking(s) affected by this schedule change.");
+        Display.message("Pending: " + pendingCount + " | Paid: " + paidCount);
+        Display.table(new String[] { "Schedule", "Current", "New" }, new String[][] {
+                { "Departure", Validator.formatDateTime(original.getDepartureTime()),
+                        Validator.formatDateTime(updated.getDepartureTime()) },
+                { "Arrival", Validator.formatDateTime(original.getArrivalTime()),
+                        Validator.formatDateTime(updated.getArrivalTime()) }
+        });
+        return Input.askYesNo("Save this schedule change?");
     }
 
     /**
@@ -309,6 +388,7 @@ public class AdminFlightMenu {
 
     public void removeFlight() {
         Display.title("Remove Flight");
+
         try {
             if (FlightStorage.getInstance().loadFlights().isEmpty()) {
                 Display.message("There are no flights to remove.");
@@ -317,21 +397,44 @@ public class AdminFlightMenu {
 
             Display.prompt("Enter flight number to remove");
             String flightNumber = Input.getScanner().nextLine();
-
             Flight flight = FlightStorage.getInstance().findFlight(flightNumber);
+
+            // Check if flight exists
             if (flight == null) {
                 Display.error("Flight " + flightNumber.trim() + " was not found.");
                 return;
             }
 
-            InformationTables.flightDetails(flight);
-            if (!Input.askYesNo("Are you sure you want to remove this flight?")) {
-                Display.message("Remove cancelled.");
+            // Only SCHEDULED or DELAYED flights can be removed
+            if (flight.getStatus() != FlightStatus.SCHEDULED
+                    && flight.getStatus() != FlightStatus.DELAYED) {
+
+                Display.error("Cannot remove flight. Only SCHEDULED or DELAYED flights can be removed.");
                 return;
             }
 
+            // Check if the flight has any existing booking records
+            for (Booking booking : BookingStorage.getInstance().loadBookings()) {
+                if (booking.flightNumber().equals(flight.getFlightNumber())) {
+
+                    Display.error("Cannot remove flight. This flight has existing booking records.");
+                    return;
+                }
+            }
+
+            // Display flight details
+            InformationTables.flightDetails(flight);
+
+            // Ask for confirmation
+            if (!Input.askYesNo("Are you sure you want to remove this flight?")) {
+                Display.message("Removal cancelled.");
+                return;
+            }
+
+            // Remove flight
             FlightStorage.getInstance().removeFlight(flight.getFlightNumber());
             Display.success("Flight " + flight.getFlightNumber() + " has been removed.");
+
         } catch (IOException e) {
             Display.error("Could not remove flight: " + e.getMessage());
         }

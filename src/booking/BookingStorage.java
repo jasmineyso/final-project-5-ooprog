@@ -307,16 +307,47 @@ public class BookingStorage {
         return updated;
     }
 
-    // cancels an active booking while retaining its record in the file
-    public boolean cancelBooking(String bookingId) throws IOException {
+    /** Cancels an active booking before departure while retaining its record in the file. */
+    public synchronized boolean cancelBooking(String bookingId) throws IOException {
         Booking current = findBooking(bookingId);
         if (current == null || !current.isActive()) {
             return false;
         }
+        Flight flight = FlightStorage.getInstance().findFlight(current.flightNumber());
+        if (flight == null || !flight.isBookable()) {
+            throw new IOException("This flight is unavailable or has already departed. The booking cannot be cancelled.");
+        }
         return updateBooking(current.cancelled());
     }
 
-    // returns whether a flight has any booking that has not been cancelled
+    /** Manually expires an unpaid booking, preserving its history and releasing its seats. */
+    public synchronized boolean expirePendingBooking(String bookingId) throws IOException {
+        Booking current = findBooking(bookingId);
+        if (current == null || current.status() != BookingStatus.PENDING) {
+            return false;
+        }
+        return updateBooking(current.withStatus(BookingStatus.EXPIRED));
+    }
+
+    /** Expires only unpaid bookings on a departed flight, preserving all booking records. */
+    public synchronized int expirePendingBookingsForFlight(String flightNumber) throws IOException {
+        List<Booking> bookings = loadBookings();
+        int expired = 0;
+        for (int i = 0; i < bookings.size(); i++) {
+            Booking booking = bookings.get(i);
+            if (booking.flightNumber().equalsIgnoreCase(flightNumber)
+                    && booking.status() == BookingStatus.PENDING) {
+                bookings.set(i, booking.withStatus(BookingStatus.EXPIRED));
+                expired++;
+            }
+        }
+        if (expired > 0) {
+            saveAllBookings(bookings);
+        }
+        return expired;
+    }
+
+    /** Returns whether a flight has any active booking. */
     public boolean hasActiveBookingsOnFlight(String flightNumber) throws IOException {
         if (flightNumber == null || flightNumber.isBlank()) {
             return false;
@@ -334,7 +365,7 @@ public class BookingStorage {
             throw new IllegalArgumentException("Booking not found.");
         }
         if (!booking.isActive()) {
-            throw new IllegalStateException("Cancelled or completed bookings cannot be modified.");
+            throw new IllegalStateException("Cancelled, expired or completed bookings cannot be modified.");
         }
     }
 

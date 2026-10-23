@@ -16,6 +16,7 @@ public class Flight {
     private final String destination;
     private final LocalDateTime departureTime;
     private final LocalDateTime arrivalTime;
+    private final LocalDateTime scheduleUpdatedAt;
     private final FlightStatus status;
     private final BigDecimal economyFare;
     private final BigDecimal premiumEconomyFare;
@@ -30,12 +31,23 @@ public class Flight {
             LocalDateTime departureTime, LocalDateTime arrivalTime, FlightStatus status,
             BigDecimal economyFare, BigDecimal premiumEconomyFare, BigDecimal businessFare, BigDecimal firstClassFare,
             int economySeats, int premiumEconomySeats, int businessSeats, int firstClassSeats) {
+        this(flightNumber, gateNumber, origin, destination, departureTime, arrivalTime, status,
+                economyFare, premiumEconomyFare, businessFare, firstClassFare,
+                economySeats, premiumEconomySeats, businessSeats, firstClassSeats, null);
+    }
+
+    public Flight(String flightNumber, String gateNumber, String origin, String destination,
+            LocalDateTime departureTime, LocalDateTime arrivalTime, FlightStatus status,
+            BigDecimal economyFare, BigDecimal premiumEconomyFare, BigDecimal businessFare, BigDecimal firstClassFare,
+            int economySeats, int premiumEconomySeats, int businessSeats, int firstClassSeats,
+            LocalDateTime scheduleUpdatedAt) {
         this.flightNumber = flightNumber;
         this.gateNumber = gateNumber;
         this.origin = origin;
         this.destination = destination;
         this.departureTime = departureTime;
         this.arrivalTime = arrivalTime;
+        this.scheduleUpdatedAt = scheduleUpdatedAt;
         this.status = status;
         this.economyFare = economyFare;
         this.premiumEconomyFare = premiumEconomyFare;
@@ -73,6 +85,11 @@ public class Flight {
 
     public FlightStatus getStatus() {
         return status;
+    }
+
+    /** Null for flights with no recorded schedule change. */
+    public LocalDateTime getScheduleUpdatedAt() {
+        return scheduleUpdatedAt;
     }
 
     // scheduled and delayed flights accept bookings only before departure
@@ -129,14 +146,16 @@ public class Flight {
         return new Flight(flightNumber, gateNumber, origin, destination,
                 departureTime, arrivalTime, newStatus,
                 economyFare, premiumEconomyFare, businessFare, firstClassFare,
-                economySeats, premiumEconomySeats, businessSeats, firstClassSeats);
+                economySeats, premiumEconomySeats, businessSeats, firstClassSeats, scheduleUpdatedAt);
     }
 
     public Flight withTimes(LocalDateTime newDeparture, LocalDateTime newArrival) {
+        boolean changed = !departureTime.equals(newDeparture) || !arrivalTime.equals(newArrival);
         return new Flight(flightNumber, gateNumber, origin, destination,
                 newDeparture, newArrival, status,
                 economyFare, premiumEconomyFare, businessFare, firstClassFare,
-                economySeats, premiumEconomySeats, businessSeats, firstClassSeats);
+                economySeats, premiumEconomySeats, businessSeats, firstClassSeats,
+                changed ? LocalDateTime.now().withSecond(0).withNano(0) : scheduleUpdatedAt);
     }
 
     @Override

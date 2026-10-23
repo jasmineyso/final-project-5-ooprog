@@ -145,6 +145,11 @@ public class RegularUserOperations {
             if (booking == null) {
                 return;
             }
+            Flight flight = FlightStorage.getInstance().findFlight(booking.flightNumber());
+            if (flight == null || !flight.isBookable()) {
+                Display.error("This flight is unavailable or has already departed. The booking cannot be cancelled.");
+                return;
+            }
             if (!Input.askYesNo("Cancel booking " + booking.bookingId() + "?")) {
                 Display.message("Booking not changed.");
                 return;
@@ -154,10 +159,12 @@ public class RegularUserOperations {
                 return;
             }
             Display.success("Booking " + booking.bookingId() + " has been cancelled. Its seats are free again.");
+
             if (booking.status() == BookingStatus.PAID) {
                 Display.message("Your payment of " + InformationTables.money(booking.totalPrice())
                         + " has been automatically refunded.");
             }
+
         } catch (IOException e) {
             Display.error("Could not cancel booking: " + e.getMessage());
         }
@@ -174,7 +181,9 @@ public class RegularUserOperations {
             return null;
         }
         InformationTables.bookings(bookings);
-        while (true) {
+        boolean isBookingValid = false;
+        Booking selectedBooking = null;
+        while (!isBookingValid) {
             Display.prompt("Enter Booking ID (0 to go back)");
             String bookingId = Input.readLine().trim();
             if (bookingId.equals("0")) {
@@ -187,11 +196,13 @@ public class RegularUserOperations {
             }
             Access.requireOwnerOrAdmin(user, booking.username());
             if (!booking.isActive()) {
-                Display.error("Cancelled or completed bookings cannot be modified.");
+                Display.error("Cancelled, expired or completed bookings cannot be modified.");
                 continue;
             }
-            return booking;
+            selectedBooking = booking;
+            isBookingValid = true;
         }
+        return selectedBooking;
     }
 
     public void payBooking(RegularUser user) {

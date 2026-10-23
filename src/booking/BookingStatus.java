@@ -3,6 +3,7 @@ package src.booking;
 /** Where a booking stands. Every new booking starts as PENDING until it is paid. */
 public enum BookingStatus {
     PENDING("Pending"),
+    EXPIRED("Expired"),
     PAID("Paid / Booked"),
     CANCELLED("Cancelled"),
     CANCELLED_REFUNDED("Cancelled / Refunded"),

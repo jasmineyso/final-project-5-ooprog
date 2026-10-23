@@ -19,7 +19,7 @@ import src.util.Input;
 
 /**
  * Admin > Manage Passenger Bookings
- * View, search, filter, update, and cancel passengers' bookings.
+ * View, search, filter, update, cancel, and expire passengers' bookings.
  */
 public class AdminBookingMenu {
 
@@ -42,6 +42,7 @@ public class AdminBookingMenu {
                 "Filter by Flight",
                 "Filter by Status",
                 "Update/Cancel a Passenger's Booking",
+                "Expire Pending Booking",
                 "Back"
         };
     }
@@ -53,7 +54,8 @@ public class AdminBookingMenu {
             case 3 -> filterByFlight();
             case 4 -> filterByStatus();
             case 5 -> updateOrCancelBooking();
-            case 6 -> {
+            case 6 -> expirePendingBooking();
+            case 7 -> {
                 return false;
             }
         }
@@ -136,8 +138,8 @@ public class AdminBookingMenu {
                 return;
             }
             InformationTables.bookings(List.of(booking));
-            if (booking.isCancelled()) {
-                Display.error("This booking is already cancelled.");
+            if (!booking.isActive()) {
+                Display.error("Cancelled, expired or completed bookings cannot be modified.");
                 return;
             }
 
@@ -186,6 +188,51 @@ public class AdminBookingMenu {
             InformationTables.bookings(List.of(updated));
         } catch (NotEnoughSeatsException e) {
             Display.error(e.getMessage());
+        }
+    }
+
+    private void expirePendingBooking() {
+        Display.title("Expire Pending Booking");
+        BookingStorage storage = BookingStorage.getInstance();
+        try {
+            List<Booking> pending = new ArrayList<>();
+            for (Booking booking : storage.loadBookings()) {
+                if (booking.status() == BookingStatus.PENDING) {
+                    pending.add(booking);
+                }
+            }
+            if (pending.isEmpty()) {
+                Display.message("There are no Pending bookings to expire.");
+                return;
+            }
+            InformationTables.bookings(pending);
+            Display.prompt("Enter booking ID to expire (0 to go back)");
+            String bookingId = Input.readLine().trim();
+            if (bookingId.equals("0")) {
+                return;
+            }
+            Booking booking = storage.findBooking(bookingId);
+            if (booking == null) {
+                Display.error("Booking " + bookingId + " was not found.");
+                return;
+            }
+            if (booking.status() != BookingStatus.PENDING) {
+                Display.error("Only Pending bookings can be expired.");
+                return;
+            }
+            InformationTables.bookings(List.of(booking));
+            Display.message("Its seats will be released. No refund applies to this unpaid booking.");
+            if (!Input.askYesNo("Expire booking " + booking.bookingId() + "?")) {
+                Display.message("Booking not changed.");
+                return;
+            }
+            if (!storage.expirePendingBooking(booking.bookingId())) {
+                Display.error("Booking was not found or is no longer Pending.");
+                return;
+            }
+            Display.success("Booking " + booking.bookingId() + " has expired. Its seats are free again.");
+        } catch (IOException e) {
+            Display.error("Could not expire booking: " + e.getMessage());
         }
     }
 
