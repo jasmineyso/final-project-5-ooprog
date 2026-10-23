@@ -224,7 +224,7 @@ public class BookingStorage {
         }
     }
 
-    // Update an existing booking
+    // update an existing booking
     public synchronized boolean updateBooking(Booking updated) throws IOException {
         if (updated == null) {
             throw new IllegalArgumentException("Updated booking cannot be null.");
@@ -247,7 +247,7 @@ public class BookingStorage {
         return false;
     }
 
-    /** Changes the seat for a booking containing exactly one seat. */
+    // changes the seat for a booking containing exactly one seat
     public Booking updateBookingSeat(String bookingId, String newSeat) throws IOException {
         Booking current = findBooking(bookingId);
         requireActive(current);
@@ -278,7 +278,7 @@ public class BookingStorage {
         return updated;
     }
 
-    /** Moves a booking to another flight, retaining its service class and seat count. */
+    // moves a booking to another flight, retaining its service class and seat count
     public Booking updateBookingFlight(String bookingId, String newFlightNumber)
             throws IOException, NotEnoughSeatsException {
         Booking current = findBooking(bookingId);
@@ -307,7 +307,7 @@ public class BookingStorage {
         return updated;
     }
 
-    /** Cancels an active booking while retaining its record in the file. */
+    // cancels an active booking while retaining its record in the file
     public boolean cancelBooking(String bookingId) throws IOException {
         Booking current = findBooking(bookingId);
         if (current == null || !current.isActive()) {
@@ -316,7 +316,7 @@ public class BookingStorage {
         return updateBooking(current.cancelled());
     }
 
-    /** Returns whether a flight has any booking that has not been cancelled. */
+    // returns whether a flight has any booking that has not been cancelled
     public boolean hasActiveBookingsOnFlight(String flightNumber) throws IOException {
         if (flightNumber == null || flightNumber.isBlank()) {
             return false;
@@ -338,7 +338,7 @@ public class BookingStorage {
         }
     }
 
-    // Cancel bookings that match a condition
+    // cancel bookings that match a condition
     public int cancelBookingsWhere(Predicate<Booking> condition)
             throws IOException {
 
@@ -362,19 +362,19 @@ public class BookingStorage {
         return cancelled;
     }
 
-    // Cancel all bookings for a specific flight
+    // cancel all bookings for a specific flight
     public int cancelBookingsForFlight(String flightNumber) throws IOException {
         return cancelBookingsWhere(
                 booking -> booking.flightNumber().equalsIgnoreCase(flightNumber));
     }
 
-    // Cancel all bookings belonging to a user
+    // cancel all bookings belonging to a user
     public int cancelBookingsOf(String username) throws IOException {
         return cancelBookingsWhere(
                 booking -> booking.username().equalsIgnoreCase(username));
     }
 
-    // Change the service class of an existing booking
+    // change the service class of an existing booking
     public Booking changeServiceClass(
             Booking booking,
             Flight flight,
@@ -400,7 +400,7 @@ public class BookingStorage {
         return updated;
     }
 
-    // Convert a booking into one line of text
+    // convert a booking into one line of text
     private String toLine(Booking booking) throws IOException {
         List<String> entries = new ArrayList<>();
         for (PassengerSeat passenger : booking.passengers()) {
@@ -449,7 +449,7 @@ public class BookingStorage {
         return String.format("BK%04d", highest + 1);
     }
 
-    // Get all available seats for a flight and service class
+    // get all available seats for a flight and service class
     public List<String> availableSeats(
             Flight flight,
             ServiceClass serviceClass) throws IOException {

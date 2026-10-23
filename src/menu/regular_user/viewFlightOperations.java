@@ -15,7 +15,6 @@ import src.util.Validator;
 
 public class ViewFlightOperations {
 
-
     public void viewAllFlights() {
         try {
             System.out.println();

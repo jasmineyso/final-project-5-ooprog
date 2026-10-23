@@ -8,7 +8,7 @@ import java.util.Objects;
 import src.flight.ServiceClass;
 import src.menu.regular_user.PassengerSeat;
 
-/** A booking owns one immutable passenger entry per seat. Updates return copies. */
+// a booking owns one immutable passenger entry per seat. Updates return copies
 public final class Booking {
     private final String bookingId;
     private final String username;

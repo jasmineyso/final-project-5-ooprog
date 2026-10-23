@@ -6,8 +6,8 @@ import java.time.LocalDateTime;
 import src.util.Validator;
 
 /**
- * Stores one flight, including a fare and seat capacity for each service class.
- * Fields cannot be reassigned. The with... methods return updated copies.
+ * stores one flight, including a fare and seat capacity for each service class
+ * fields cannot be reassigned, the with... methods return updated copies
  */
 public class Flight {
     private final String flightNumber;
@@ -75,7 +75,7 @@ public class Flight {
         return status;
     }
 
-    /** Scheduled and delayed flights accept bookings only before departure. */
+    // scheduled and delayed flights accept bookings only before departure
     public boolean isBookable() {
         return (status == FlightStatus.SCHEDULED || status == FlightStatus.DELAYED)
                 && departureTime.isAfter(LocalDateTime.now());
@@ -136,14 +136,6 @@ public class Flight {
         return new Flight(flightNumber, gateNumber, origin, destination,
                 newDeparture, newArrival, status,
                 economyFare, premiumEconomyFare, businessFare, firstClassFare,
-                economySeats, premiumEconomySeats, businessSeats, firstClassSeats);
-    }
-
-    public Flight withFares(BigDecimal newEconomyFare, BigDecimal newPremiumEconomyFare,
-            BigDecimal newBusinessFare, BigDecimal newFirstClassFare) {
-        return new Flight(flightNumber, gateNumber, origin, destination,
-                departureTime, arrivalTime, status,
-                newEconomyFare, newPremiumEconomyFare, newBusinessFare, newFirstClassFare,
                 economySeats, premiumEconomySeats, businessSeats, firstClassSeats);
     }
 

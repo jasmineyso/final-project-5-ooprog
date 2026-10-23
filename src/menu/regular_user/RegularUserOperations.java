@@ -10,7 +10,6 @@ import src.booking.Booking;
 import src.booking.BookingStatus;
 import src.booking.BookingStorage;
 import src.booking.exception.NotEnoughSeatsException;
-import src.core.ErrorMessages;
 import src.flight.Flight;
 import src.flight.FlightStorage;
 import src.flight.ServiceClass;
@@ -39,6 +38,7 @@ public class RegularUserOperations {
     }
 
     private void doViewFlights() {
+        System.out.println();
         try {
             if (FlightStorage.getInstance().loadFlights().isEmpty()) {
                 System.out.println("No flights are available yet.");
@@ -51,32 +51,19 @@ public class RegularUserOperations {
 
         ViewFlightOperations viewFlights = new ViewFlightOperations();
 
-        while (true) {
-            System.out.println("1. View All Flights");
-            System.out.println("2. Search by Origin and Destination");
-            System.out.println("3. Search Service Class Remaining Seat");
-            System.out.println("0. Back");
+        boolean running = true;
+        while (running) {
+            int choice = Input.askChoice("View Flights",
+                    "View All Flights",
+                    "Search by Origin and Destination",
+                    "Search Service Class Remaining Seats",
+                    "Back");
 
-            System.out.print("Enter your choice: ");
-            String userChoice = Input.readLine().trim();
-
-            switch (userChoice) {
-                case "0" -> {
-                    return;
-                }
-                case "1" -> {
-                    viewFlights.viewAllFlights();
-                    return;
-                }
-                case "2" -> {
-                    viewFlights.searchByOriginAndDestination();
-                    return;
-                }
-                case "3" -> {
-                    viewFlights.searchByServiceClassRemainingSeats();
-                    return;
-                }
-                default -> System.out.println(ErrorMessages.INVALID_CHOICE);
+            switch (choice) {
+                case 1 -> viewFlights.viewAllFlights();
+                case 2 -> viewFlights.searchByOriginAndDestination();
+                case 3 -> viewFlights.searchByServiceClassRemainingSeats();
+                case 4 -> running = false;
             }
         }
     }
@@ -95,7 +82,7 @@ public class RegularUserOperations {
     }
 
     private void doUpdateBookedFlight(RegularUser user) {
-        Display.title("Update Booked Flight");
+        Display.subTitle("Update Booked Flight");
         try {
             Booking booking = selectOwnBooking(user);
             if (booking == null) {

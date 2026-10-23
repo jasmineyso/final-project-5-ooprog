@@ -7,13 +7,14 @@ import src.account.AccountStorage;
 import src.account.RegularUser;
 import src.core.ErrorMessages;
 import src.util.Input;
+import src.util.Display;
 
 public class SignUp {
     private final Scanner sc = Input.getScanner();
 
     public RegularUser signUp() {
 
-        System.out.println("=== Sign Up ===");
+        Display.title("Sign Up");
 
         String username = "";
         boolean isUsernameValid = false;

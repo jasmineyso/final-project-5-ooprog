@@ -12,7 +12,7 @@ import src.booking.exception.NotEnoughSeatsException;
 import src.flight.Flight;
 import src.flight.ServiceClass;
 
-/** Assigns available seats and prepares a booking for the payment choice. */
+// assigns available seats and prepares a booking for the payment choice
 public class FlightSeatAssign {
     private final Flight flight;
     private final ServiceClass serviceClass;
