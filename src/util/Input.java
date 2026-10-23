@@ -80,6 +80,6 @@ public final class Input {
     public static void pause() {
         Display.message("");
         Display.prompt("Press Enter to continue...");
-        getScanner().nextLine();
+        readLine();
     }
 }

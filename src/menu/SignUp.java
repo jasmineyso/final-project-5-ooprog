@@ -1,7 +1,6 @@
 package src.menu;
 
 import java.io.IOException;
-import java.util.Scanner;
 
 import src.account.AccountStorage;
 import src.account.RegularUser;
@@ -10,7 +9,6 @@ import src.util.Input;
 import src.util.Display;
 
 public class SignUp {
-    private final Scanner sc = Input.getScanner();
 
     public RegularUser signUp() {
 
@@ -20,7 +18,7 @@ public class SignUp {
         boolean isUsernameValid = false;
         while (!isUsernameValid) {
             System.out.print("Create Username: ");
-            username = sc.nextLine().trim();
+            username = Input.readLine().trim();
             if (!username.matches("[A-Za-z0-9_.]{3,20}")) {
                 System.out.println("Username must be 3 to 20 letters, digits, _ or . (no spaces).");
             } else if (isUsernameTaken(username)) {
@@ -34,7 +32,7 @@ public class SignUp {
         boolean isPasswordValid = false;
         while (!isPasswordValid) {
             System.out.print("Create Password: ");
-            password = sc.nextLine();
+            password = Input.readLine();
             isPasswordValid = !password.trim().isEmpty();
             if (!isPasswordValid) {
                 System.out.println(ErrorMessages.INVALID_PASSWORD);
@@ -45,7 +43,7 @@ public class SignUp {
         boolean isEmailValid = false;
         while (!isEmailValid) {
             System.out.print("Enter Email: ");
-            email = sc.nextLine().trim();
+            email = Input.readLine().trim();
             isEmailValid = email.matches("[^\\s@]+@[^\\s@.]+(?:\\.[^\\s@.]+)+");
             if (!isEmailValid) {
                 System.out.println(ErrorMessages.INVALID_EMAIL);
@@ -56,7 +54,7 @@ public class SignUp {
         boolean isPhoneNumberValid = false;
         while (!isPhoneNumberValid) {
             System.out.print("Enter Phone Number: ");
-            phoneNumber = sc.nextLine().trim();
+            phoneNumber = Input.readLine().trim();
             isPhoneNumberValid = phoneNumber.matches("\\+?[0-9]+");
             if (!isPhoneNumberValid) {
                 System.out.println(ErrorMessages.INVALID_PHONE_NUMBER);
@@ -67,7 +65,7 @@ public class SignUp {
         boolean isAddressValid = false;
         while (!isAddressValid) {
             System.out.print("Enter Address: ");
-            address = sc.nextLine().trim();
+            address = Input.readLine().trim();
             isAddressValid = !address.isEmpty();
             if (!isAddressValid) {
                 System.out.println(ErrorMessages.INVALID_ADDRESS);
