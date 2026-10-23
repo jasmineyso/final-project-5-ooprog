@@ -111,14 +111,16 @@ public class PaymentOperation {
             throw new IOException("This flight is unavailable, cancelled or has already departed.");
         }
         System.out.printf("Amount due: PHP %,.2f%n", booking.totalPrice());
-        while (true) {
+        boolean isPaymentConfirmed = false;
+        BigDecimal amountPaid = null;
+        while (!isPaymentConfirmed) {
             System.out.print("Enter cash amount in PHP (0 to cancel): ");
             String paymentInput = Input.readLine().trim();
             if (!paymentInput.matches("[0-9]+(?:\\.[0-9]{1,2})?")) {
                 System.out.println(ErrorMessages.INVALID_PAYMENT_AMOUNT);
                 continue;
             }
-            BigDecimal amountPaid = new BigDecimal(paymentInput);
+            amountPaid = new BigDecimal(paymentInput);
             if (amountPaid.signum() == 0) {
                 return null;
             }
@@ -129,8 +131,9 @@ public class PaymentOperation {
             if (!Input.askYesNo("Confirm payment for " + booking.bookingId() + "?")) {
                 return null;
             }
-            return amountPaid;
+            isPaymentConfirmed = true;
         }
+        return amountPaid;
     }
 
     void displayPaymentReceipt(Booking booking, BigDecimal amountPaid) {

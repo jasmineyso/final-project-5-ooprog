@@ -50,13 +50,22 @@ public class Menu {
                 case 1 -> login.loginAdmin();
                 case 2 -> regularUserPage();
                 case 3 -> {
-                    System.out.print("Are you sure you want to exit? (y/n): ");
-                    String confirm = Input.readLine().trim();
-                    if (confirm.equalsIgnoreCase("y")) {
-                        Display.success("Thank you for using the ___ Airline. Goodbye!");
-                        running = false;
-                    } else {
-                        Display.error("Exit cancelled.");
+                    boolean isValid = false;
+
+                    while(!isValid){
+                        System.out.print("Are you sure you want to exit? (y/n): ");
+                        String confirm = Input.readLine().trim();
+
+                        if (confirm.equalsIgnoreCase("y")) {
+                            System.out.println("Thank you for using the ___ Airline. Goodbye!");
+                            isValid = true;
+                            running = false;
+                        } else if (confirm.equalsIgnoreCase("n")){
+                            System.out.println("Exit cancelled.");
+                            isValid = true;
+                        } else {
+                            System.out.println(ErrorMessages.INVALID_CHOICE);
+                        }
                     }
                 }
             }
@@ -75,10 +84,22 @@ public class Menu {
                 case 1 -> signUp();
                 case 2 -> login.loginRegularUser();
                 case 3 -> {
-                    System.out.print("Are you sure you want to go back? (y/n): ");
-                    String confirm = Input.readLine().trim();
-                    if (confirm.equalsIgnoreCase("y")) {
-                        running = false;
+                    boolean isValid = false;
+
+                    while(!isValid){
+                        System.out.print("Are you sure you want to exit? (y/n): ");
+                        String confirm = Input.readLine().trim();
+                        
+                        if (confirm.equalsIgnoreCase("y")) {
+                            System.out.println("Back...");
+                            isValid = true;
+                            running = false;
+                        } else if (confirm.equalsIgnoreCase("n")){
+                            System.out.println("Exit cancelled.");
+                            isValid = true;
+                        } else {
+                            System.out.println(ErrorMessages.INVALID_CHOICE);
+                        }
                     }
                 }
             }

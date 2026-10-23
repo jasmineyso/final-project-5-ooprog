@@ -30,8 +30,8 @@ public class ViewBookedFlightOperation {
 
             int choice = Input.askChoice("View Booked Flights",
                     "View Upcoming Trips", "View Cancelled Trips", "View Past / Departed Trips",
-                    "View All Booked Flights", "Back");
-            if (choice == 5) {
+                    "View All Booked Flights", "View Expired Bookings", "Back");
+            if (choice == 6) {
                 return;
             }
 
@@ -46,6 +46,7 @@ public class ViewBookedFlightOperation {
 
             Map<String, List<Booking>> groups = new LinkedHashMap<>();
             groups.put("Upcoming Trips", new ArrayList<>());
+            groups.put("Expired Bookings", new ArrayList<>());
             groups.put("Cancelled Trips", new ArrayList<>());
             groups.put("Past / Departed Trips", new ArrayList<>());
             groups.put("Flight Details Unavailable", new ArrayList<>());
@@ -53,7 +54,9 @@ public class ViewBookedFlightOperation {
             for (Booking booking : bookings) {
                 Flight flight = flights.get(Validator.normalizeFlightNumber(booking.flightNumber()));
                 String group;
-                if (booking.isCancelled()
+                if (booking.status() == BookingStatus.EXPIRED) {
+                    group = "Expired Bookings";
+                } else if (booking.isCancelled()
                         || (flight != null && flight.getStatus() == FlightStatus.CANCELLED)) {
                     group = "Cancelled Trips";
                 } else if (booking.status() == BookingStatus.COMPLETED) {
@@ -72,6 +75,7 @@ public class ViewBookedFlightOperation {
                 case 1 -> "Upcoming Trips";
                 case 2 -> "Cancelled Trips";
                 case 3 -> "Past / Departed Trips";
+                case 5 -> "Expired Bookings";
                 default -> null;
             };
             for (Map.Entry<String, List<Booking>> group : groups.entrySet()) {
@@ -102,6 +106,12 @@ public class ViewBookedFlightOperation {
         if (flight == null) {
             System.out.println("Flight details unavailable; the flight may have been removed.");
         } else {
+            if (booking.isActive() && flight.getScheduleUpdatedAt() != null) {
+                Display.message("SCHEDULE UPDATED - Flight " + flight.getFlightNumber());
+                Display.message("Schedule changed on: " + Validator.formatDateTime(flight.getScheduleUpdatedAt()));
+                Display.message("New departure: " + Validator.formatDateTime(flight.getDepartureTime()));
+                Display.message("New arrival: " + Validator.formatDateTime(flight.getArrivalTime()));
+            }
             rows.add(new String[] { "Origin", flight.getOrigin() });
             rows.add(new String[] { "Destination", flight.getDestination() });
             rows.add(new String[] { "Departure", Validator.formatDateTime(flight.getDepartureTime()) });

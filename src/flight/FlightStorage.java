@@ -49,7 +49,7 @@ public final class FlightStorage {
             }
             String[] fields = line.split("\\|", -1);
             try {
-                if (fields.length == 15) {
+                if (fields.length == 15 || fields.length == 16) {
                     flights.add(fromLine(fields));
                 } else if (fields.length == 10) {
                     flights.add(fromOldLine(fields));
@@ -64,9 +64,10 @@ public final class FlightStorage {
     }
 
     /**
-     * Reads one line in the current format (15 fields):
+     * Reads one line in the current format (16 fields; also accepts the previous 15):
      * number|gate|origin|destination|departure|arrival|status|
-     * economyFare|premiumFare|businessFare|firstFare|economySeats|premiumSeats|businessSeats|firstSeats
+     * economyFare|premiumFare|businessFare|firstFare|economySeats|premiumSeats|businessSeats|firstSeats|scheduleUpdatedAt
+     * The final field is empty when no schedule change has been recorded.
      */
     private Flight fromLine(String[] fields) {
         return new Flight(fields[0], fields[1], fields[2], fields[3],
@@ -75,7 +76,8 @@ public final class FlightStorage {
                 new BigDecimal(fields[7]), new BigDecimal(fields[8]),
                 new BigDecimal(fields[9]), new BigDecimal(fields[10]),
                 Integer.parseInt(fields[11]), Integer.parseInt(fields[12]),
-                Integer.parseInt(fields[13]), Integer.parseInt(fields[14]));
+                Integer.parseInt(fields[13]), Integer.parseInt(fields[14]),
+                fields.length == 16 && !fields[15].isBlank() ? parseDateTime(fields[15]) : null);
     }
 
     /**
@@ -183,16 +185,22 @@ public final class FlightStorage {
         for (int i = 0; i < flights.size(); i++) {
             if (Validator.normalizeFlightNumber(flights.get(i).getFlightNumber()).equals(target)) {
                 BookingStorage bookings = BookingStorage.getInstance();
-                if (updated.getStatus() == FlightStatus.CANCELLED) {
+                boolean updatesBookings = updated.getStatus() == FlightStatus.CANCELLED
+                        || updated.getStatus() == FlightStatus.DEPARTED;
+                if (updatesBookings) {
                     // Validate booking data before changing the flight file.
                     bookings.loadBookings();
                 }
                 Flight original = flights.get(i);
                 flights.set(i, updated);
                 saveAllFlights(flights);
-                if (updated.getStatus() == FlightStatus.CANCELLED) {
+                if (updatesBookings) {
                     try {
-                        bookings.cancelBookingsForFlight(updated.getFlightNumber());
+                        if (updated.getStatus() == FlightStatus.CANCELLED) {
+                            bookings.cancelBookingsForFlight(updated.getFlightNumber());
+                        } else {
+                            bookings.expirePendingBookingsForFlight(updated.getFlightNumber());
+                        }
                     } catch (IOException e) {
                         flights.set(i, original);
                         try {
@@ -262,7 +270,7 @@ public final class FlightStorage {
     }
 
     /**
-     * Turns one flight into one line of the file (15 fields, same order as fromLine).
+     * Turns one flight into one line of the file (16 fields, same order as fromLine).
      * If you add a field to Flight later, this is the ONLY place saving needs to change.
      */
     private String toLine(Flight flight) throws IOException {
@@ -277,6 +285,8 @@ public final class FlightStorage {
         for (ServiceClass serviceClass : ServiceClass.values()) {
             fields.add(Integer.toString(flight.getSeatCount(serviceClass)));
         }
+        fields.add(flight.getScheduleUpdatedAt() == null
+                ? "" : Validator.formatDateTime(flight.getScheduleUpdatedAt()));
         for (String field : fields) {
             if (field.contains("|") || field.contains("\n") || field.contains("\r")) {
                 throw new IOException("Flight fields cannot contain | or line breaks.");

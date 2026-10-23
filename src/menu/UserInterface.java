@@ -1,6 +1,7 @@
 package src.menu;
 
 import src.account.RegularUser;
+import src.core.ErrorMessages;
 import src.menu.admin.AdminAccountMenu;
 import src.menu.admin.AdminBookingMenu;
 import src.menu.admin.AdminFlightMenu;
@@ -43,13 +44,22 @@ public class UserInterface {
                 case 2 -> new AdminBookingMenu().start();
                 case 3 -> new AdminAccountMenu().start();
                 case 4 -> {
-                    System.out.print("Are you sure you want to log out? (y/n): ");
-                    String confirm = Input.readLine().trim();
-                    if (confirm.equalsIgnoreCase("y")) {
-                        Display.message("Logging out...");
-                        running = false;
-                    } else {
-                        Display.message("Log out cancelled.");
+                    boolean isValid = false;
+
+                    while(!isValid){
+                        System.out.print("Are you sure you want to exit? (y/n): ");
+                        String confirm = Input.readLine().trim();
+                        
+                        if (confirm.equalsIgnoreCase("y")) {
+                            System.out.println("Logging out...");
+                            isValid = true;
+                            running = false;
+                        } else if (confirm.equalsIgnoreCase("n")){
+                            System.out.println("Log out cancelled.");
+                            isValid = true;
+                        } else {
+                            System.out.println(ErrorMessages.INVALID_CHOICE);
+                        }
                     }
                 }
             }
@@ -85,13 +95,22 @@ public class UserInterface {
                 case 5 -> RegularUserOperations.getInstance().updateBookedFlight(user);
                 case 6 -> RegularUserOperations.getInstance().cancelBookedFlight(user);
                 case 7 -> {
-                    System.out.print("Are you sure you want to log out? (y/n): ");
-                    String confirm = Input.readLine().trim();
-                    if (confirm.equalsIgnoreCase("y")) {
-                        Display.message("Logging out...");
-                        running = false;
-                    } else {
-                        Display.message("Log out cancelled.");
+                    boolean isValid = false;
+
+                    while(!isValid){
+                        System.out.print("Are you sure you want to exit? (y/n): ");
+                        String confirm = Input.readLine().trim();
+                        
+                        if (confirm.equalsIgnoreCase("y")) {
+                            System.out.println("Logging out...");
+                            isValid = true;
+                            running = false;
+                        } else if (confirm.equalsIgnoreCase("n")){
+                            System.out.println("Log out cancelled.");
+                            isValid = true;
+                        } else {
+                            System.out.println(ErrorMessages.INVALID_CHOICE);
+                        }
                     }
                 }
             }

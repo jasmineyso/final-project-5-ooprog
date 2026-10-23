@@ -216,6 +216,7 @@ public class BookFlightOperation {
                 bookingStorage.saveBooking(booking);
                 System.out.println("Booking saved: " + booking.bookingId() + " | Status: " + booking.status());
                 System.out.println("You can pay later using Pay for Booked Flight.");
+                Display.message("An admin may expire unpaid bookings. Expired bookings release their seats and cannot be paid.");
             }
         } catch (NotEnoughSeatsException e) {
             System.out.println(e.getMessage());
