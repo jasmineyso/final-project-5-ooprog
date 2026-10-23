@@ -1,6 +1,7 @@
 package src.menu;
 
 import src.account.RegularUser;
+import src.account.User;
 import src.core.ErrorMessages;
 import src.menu.admin.AdminAccountMenu;
 import src.menu.admin.AdminBookingMenu;
@@ -20,6 +21,15 @@ public class UserInterface {
             instance = new UserInterface();
         }
         return instance;
+    }
+
+    /** Opens the menu for the authenticated account's role. */
+    public void showMenu(User user) {
+        switch (user.getRole()) {
+            case "Admin" -> adminUI();
+            case "Regular User" -> userUI((RegularUser) user);
+            default -> throw new IllegalArgumentException("Unknown user role.");
+        }
     }
 
     public void adminUI() {

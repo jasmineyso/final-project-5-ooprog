@@ -29,7 +29,7 @@ public final class FlightStorage {
         filePath = directory.resolve("AVAILABLE_FLIGHTS.txt");
     }
 
-    public static FlightStorage getInstance() {
+    public synchronized static FlightStorage getInstance() {
         if (instance == null) {
             instance = new FlightStorage();
         }

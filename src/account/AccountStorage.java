@@ -15,7 +15,7 @@ public class AccountStorage {
     private final Path filePath;
     private final Path adminFilePath;
 
-    public static AccountStorage getInstance() {
+    public synchronized static AccountStorage getInstance() {
         if (instance == null) {
             instance = new AccountStorage();
         }
