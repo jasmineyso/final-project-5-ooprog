@@ -33,7 +33,7 @@ public class LogIn {
         }
 
         Display.title("Welcome, " + admin.getUsername() + "!");
-        UserInterface.getInstance().adminUI();
+        UserInterface.getInstance().showMenu(admin);
     }
 
     /**
@@ -94,7 +94,7 @@ public class LogIn {
             }
 
             Display.title("Welcome, " + user.getUsername() + "!");
-            UserInterface.getInstance().userUI(user);
+            UserInterface.getInstance().showMenu(user);
         } catch (IOException e) {
             Display.error(ErrorMessages.LOAD_FAILED + e.getMessage());
         }
