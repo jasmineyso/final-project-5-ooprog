@@ -62,7 +62,7 @@ public class AdminAccountMenu {
     /** Shows every user whose username CONTAINS the search text, e.g. "jua" finds "juan123". */
     private void searchUsers() {
         Display.prompt("Enter username (or part of it)");
-        String search = Input.getScanner().nextLine().trim();
+        String search = Input.readLine().trim();
         if (search.isEmpty()) {
             Display.error("Please type at least one character.");
             return;
@@ -82,7 +82,7 @@ public class AdminAccountMenu {
 
     private void deleteUser() {
         Display.prompt("Enter the exact username to delete");
-        String username = Input.getScanner().nextLine().trim();
+        String username = Input.readLine().trim();
         try {
             RegularUser user = AccountStorage.getInstance().findUser(username);
             if (user == null) {

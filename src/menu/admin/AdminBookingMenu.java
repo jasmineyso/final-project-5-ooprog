@@ -71,7 +71,7 @@ public class AdminBookingMenu {
     /** Matches any part of the passenger's name, ignoring capitals: "dela" finds "Juan Dela Cruz". */
     private void searchByPassenger() {
         Display.prompt("Enter passenger name (or part of it)");
-        String search = Input.getScanner().nextLine().trim().toLowerCase();
+        String search = Input.readLine().trim().toLowerCase();
         if (search.isEmpty()) {
             Display.error("Please type at least one character.");
             return;
@@ -83,7 +83,7 @@ public class AdminBookingMenu {
 
     private void filterByFlight() {
         Display.prompt("Enter flight number");
-        String flightNumber = Input.getScanner().nextLine().trim().replace(" ", "");
+        String flightNumber = Input.readLine().trim().replace(" ", "");
         showBookings("Bookings on flight " + flightNumber.toUpperCase(),
                 booking -> booking.flightNumber().equalsIgnoreCase(flightNumber));
     }
@@ -130,7 +130,7 @@ public class AdminBookingMenu {
 
     private void updateOrCancelBooking() {
         Display.prompt("Enter booking ID (e.g. BK0001)");
-        String bookingId = Input.getScanner().nextLine().trim();
+        String bookingId = Input.readLine().trim();
         try {
             Booking booking = BookingStorage.getInstance().findBooking(bookingId);
             if (booking == null) {

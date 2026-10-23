@@ -4,8 +4,10 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -167,9 +169,21 @@ public final class FlightStorage {
         for (Flight flight : flights) {
             lines.add(toLine(flight));
         }
-        Files.createDirectories(filePath.toAbsolutePath().getParent());
-        Files.write(filePath, lines, StandardCharsets.UTF_8,
-                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        // Finish writing the replacement before touching the original flight file.
+        Path target = filePath.toAbsolutePath();
+        Files.createDirectories(target.getParent());
+        Path temporary = Files.createTempFile(target.getParent(), "flights-", ".tmp");
+        try {
+            Files.write(temporary, lines, StandardCharsets.UTF_8);
+            try {
+                Files.move(temporary, target,
+                        StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(temporary, target, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } finally {
+            Files.deleteIfExists(temporary);
+        }
     }
 
     /**

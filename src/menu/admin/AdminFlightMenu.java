@@ -118,7 +118,7 @@ public class AdminFlightMenu {
         String value = "";
         while (!isFieldValid) {
             Display.prompt(prompt);
-            value = Input.getScanner().nextLine().trim();
+            value = Input.readLine().trim();
             if (validation.test(value)) {
                 isFieldValid = true;
             } else {
@@ -326,7 +326,7 @@ public class AdminFlightMenu {
             return null;
         }
         Display.prompt("Enter flight number");
-        String flightNumber = Input.getScanner().nextLine();
+        String flightNumber = Input.readLine();
         Flight flight = FlightStorage.getInstance().findFlight(flightNumber);
         if (flight == null) {
             Display.error("Flight " + flightNumber.trim() + " was not found.");
@@ -396,7 +396,7 @@ public class AdminFlightMenu {
             }
 
             Display.prompt("Enter flight number to remove");
-            String flightNumber = Input.getScanner().nextLine();
+            String flightNumber = Input.readLine();
             Flight flight = FlightStorage.getInstance().findFlight(flightNumber);
 
             // Check if flight exists
@@ -415,7 +415,7 @@ public class AdminFlightMenu {
 
             // Check if the flight has any existing booking records
             for (Booking booking : BookingStorage.getInstance().loadBookings()) {
-                if (booking.flightNumber().equals(flight.getFlightNumber())) {
+                if (booking.flightNumber().equalsIgnoreCase(flight.getFlightNumber())) {
 
                     Display.error("Cannot remove flight. This flight has existing booking records.");
                     return;
@@ -459,7 +459,7 @@ public class AdminFlightMenu {
 
     private void searchByFlightNumber() {
         Display.prompt("Enter flight number");
-        String flightNumber = Input.getScanner().nextLine();
+        String flightNumber = Input.readLine();
         try {
             Flight flight = FlightStorage.getInstance().findFlight(flightNumber);
             if (flight == null) {

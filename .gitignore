@@ -10,11 +10,6 @@ target/
 .idea/
 *.iml
 
-# Local application data
-/src/files/USER_ACCOUNTS.TXT
-/src/files/ADMIN_ACCOUNTS.txt
-/src/files/AVAILABLE_FLIGHTS.txt
-
 # OS files
 Thumbs.db
 .DS_Store
